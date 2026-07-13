@@ -10,7 +10,12 @@ tmin, tmax = 0, 1000 # start and end time of sim
 
 g = nx.random_regular_graph(k, N) # create graph
 
-nx.draw(g) # see what graph looks like
+# visualise graph
+plt.figure(figsize=(6, 6))
+nx.draw(g, node_size=20)
+plt.title("Random Regular Graph")
+plt.show()
+
 
 t, S, I, R = eon.fast_SIR(g, beta, gamma, initial_infecteds=None, initial_recovereds=None, rho=rho,
             tmin=tmin, tmax=tmax)
@@ -25,6 +30,5 @@ def plot_fast_sir(g, t, s, i, r):
     plt.xlabel('Time')
     plt.ylabel('Population')
     plt.show()
-
 
 plot_fast_sir(g, t, S, I, R)
