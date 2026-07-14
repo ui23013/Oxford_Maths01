@@ -5,8 +5,10 @@ import random
 
 N, k= 1000, 3 # number of nodes, node degree
 beta, gamma = 0.4, 0.1 # transmission, recovery rates respectively
-
 rho = 0.05 # fraction of initially infected
+
+p, q = 1, 0.1 # probability of informed removal, proportion of removal
+
 def create_rrg(k, N):
     '''
     creates RRG
@@ -41,7 +43,7 @@ def run_first_sim(graph, beta, gamma, rho, tau):
     # recovered_nodes = [node for node, status in first_states.items() if status == 'R']
 
 
-    return infected_nodes
+    return infected_nodes, first_states
 
 
 def edge_removal(graph, p, q,  i_nodes):
@@ -61,7 +63,7 @@ def edge_removal(graph, p, q,  i_nodes):
     removal_count = round(q * total_edges)
 
     if removal_count == 0: # remove nothing case
-        return
+        return graph
 
     # define set of all infected nodes
     infected_nodes = set(i_nodes)
@@ -84,26 +86,50 @@ def edge_removal(graph, p, q,  i_nodes):
 
     return graph
 
+def run_second_sim(graph, beta, gamma, initial_states,tmin, tmax):
+    # doesnt work, cant start fast_sir mid sim
+    # sim = eon.fast_SIR(graph, beta, gamma, status=initial_states,
+                       #tmin=tmin, tmax=tmax, return_full_data=True)
 
+    # extract which nodes were infected/recovered at time tmin
+    I_nodes = [node for node, status in initial_states.items() if status == 'I']
+    R_nodes = [node for node, status in initial_states.items() if status == 'R']
 
-def simulate_incomp_info_SIR(N, k, beta, gamma, rho, tau, p, q):
+    sim = eon.fast_SIR(graph, beta, gamma, initial_infecteds=I_nodes, tmax = tmax, return_full_data = True)
+
+    return sim
+
+def sim_single_intervention(N, k, beta, gamma, rho, tau, p, q, sim_duration):
     '''
-    Simulate the SIR model which models having incomplete information
-    Args:
-        p: probability of informed removal
-        q: proportion of nodes to be removed
-
-    Returns: SIR simulation for incomplete information case
+    simulate the SIR model which models having incomplete information
     '''
 
     # create rrg graph
     sim_g = create_rrg(k, N)
+    initial_edges = sim_g.number_of_edges()
 
     # simulate until time tau and extract the infected nodes
-    infected_nodes = run_first_sim(sim_g, beta, gamma, rho, tau)
+    infected_nodes, first_states = run_first_sim(sim_g, beta, gamma, rho, tau)
 
-    first_edge_removal = edge_removal(sim_g, p, q, infected_nodes)
+    # obtain graph after edge removal
+    modified_graph = edge_removal(sim_g, p, q, infected_nodes)
+    edges_removed = initial_edges - modified_graph.number_of_edges()
 
+    # and run a second sum to see results of intervention
+    second_sim = run_second_sim(modified_graph, beta, gamma,first_states, tmin=tau, tmax=sim_duration)
+    final_states = second_sim.get_statuses(time=sim_duration) # states at final time
 
+    # outcomes
+    final_infected = sum(1 for status in final_states.values() if status == 'I')
+    final_recovered = sum(1 for status in final_states.values() if status == 'R')
+    total_infected = final_infected + final_recovered
 
+    return modified_graph, edges_removed, final_infected, final_recovered, total_infected
 
+no_intervention = sim_single_intervention(N=1000, k=3, beta=0.4, gamma=0.1, rho=0.05, tau=1, p=1, q=0, sim_duration=100)
+
+# perfect information
+# test_run_p1 = sim_single_intervention(N=1000, k=3, beta=0.4, rho=0.05, tau=1-, p=1, q=0.1, sim_duration=100)
+
+# random intervention
+# test_run_p0= sim_single_intervention(N=1000, k=3, beta=0.4, rho=0.05, tau=1-, p=0, q=0.1, sim_duration=100)
