@@ -3,11 +3,7 @@ import matplotlib.pyplot as plt
 import EoN as eon
 import random
 
-N, k= 1000, 3 # number of nodes, node degree
-beta, gamma = 0.4, 0.1 # transmission, recovery rates respectively
-rho = 0.05 # fraction of initially infected
-
-p, q = 1, 0.1 # probability of informed removal, proportion of removal
+random.seed(0)
 
 def create_rrg(k, N):
     '''
@@ -96,8 +92,9 @@ def run_second_sim(graph, beta, gamma, initial_states,tmin, tmax):
     R_nodes = [node for node, status in initial_states.items() if status == 'R']
 
     sim = eon.fast_SIR(graph, beta, gamma, initial_infecteds=I_nodes, tmax = tmax, return_full_data = True)
-
+    # this isnt considering an 'initial_recoverds' so need to fix that
     return sim
+
 
 def sim_single_intervention(N, k, beta, gamma, rho, tau, p, q, sim_duration):
     '''
@@ -116,7 +113,7 @@ def sim_single_intervention(N, k, beta, gamma, rho, tau, p, q, sim_duration):
     edges_removed = initial_edges - modified_graph.number_of_edges()
 
     # and run a second sum to see results of intervention
-    second_sim = run_second_sim(modified_graph, beta, gamma,first_states, tmin=tau, tmax=sim_duration)
+    second_sim = run_second_sim(modified_graph, beta, gamma, first_states, tmin=tau, tmax=sim_duration)
     final_states = second_sim.get_statuses(time=sim_duration) # states at final time
 
     # outcomes
@@ -126,10 +123,13 @@ def sim_single_intervention(N, k, beta, gamma, rho, tau, p, q, sim_duration):
 
     return modified_graph, edges_removed, final_infected, final_recovered, total_infected
 
-no_intervention = sim_single_intervention(N=1000, k=3, beta=0.4, gamma=0.1, rho=0.05, tau=1, p=1, q=0, sim_duration=100)
 
+# !!! the recovered people at time tau are being neglected
+no_intervention = sim_single_intervention(N=1000, k=3, beta=0.4, gamma=0.1, rho=0.05, tau=20, p=1, q=0, sim_duration=100)
+print(no_intervention) # shows edges removed, final_infected = 0 and final_recovered, final_infected = n
 # perfect information
-# test_run_p1 = sim_single_intervention(N=1000, k=3, beta=0.4, rho=0.05, tau=1-, p=1, q=0.1, sim_duration=100)
-
+test_run_p1 = sim_single_intervention(N=1000, k=3, beta=0.4, gamma=0.1, rho=0.05, tau=20, p=1, q=0.1, sim_duration=100)
+print(test_run_p1)
 # random intervention
-# test_run_p0= sim_single_intervention(N=1000, k=3, beta=0.4, rho=0.05, tau=1-, p=0, q=0.1, sim_duration=100)
+test_run_p0= sim_single_intervention(N=1000, k=3, beta=0.4, gamma=0.1, rho=0.05, tau=20, p=0, q=0.1, sim_duration=100)
+print(test_run_p0)
