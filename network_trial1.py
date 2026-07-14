@@ -2,11 +2,11 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import EoN as eon
 
-N, k= 500, 4 # number of nodes, node degree
+N, k= 1000, 3 # number of nodes, node degree
 beta, gamma = 0.4, 0.1 # transmission, recovery rates respectively
 # not setting initial infected as it raises error if both this and rho are set
 rho = 0.05 # fraction of initially infected
-tmin, tmax = 0, 1000 # start and end time of sim
+tmin, tmax = 0, 5000 # start and end time of sim
 
 g = nx.random_regular_graph(k, N, seed=18) # create graph
 
