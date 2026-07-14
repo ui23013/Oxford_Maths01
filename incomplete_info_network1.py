@@ -45,51 +45,44 @@ def run_first_sim(graph, beta, gamma, rho, tau):
 
 
 def edge_removal(graph, p, q,  i_nodes):
-    total_edges = graph.number_of_edges()
-    removal_count = round(q*total_edges)
-
-    # from sam
+    '''
+    removes a proportion of edges from the graph
+    with probability p, each removal preferentially chooses a edge adjacent to an infected node,
+    otherwise (so with probabilty 1-p OR if there are no such edges) a random edge is removed
+    (in the second instance this alters p?)
+    Args:
+        graph: simualtion graph
+        i_nodes: infected nodes from simulation
+    '''
     randgen = random.Random()
+
+    # define total edges in the graph and thus how many should be removed
+    total_edges = graph.number_of_edges()
+    removal_count = round(q * total_edges)
+
+    if removal_count == 0: # remove nothing case
+        return
 
     # define set of all infected nodes
     infected_nodes = set(i_nodes)
 
     for e in range(removal_count):
+        # and list of all edges in the graph
         current_edges = list(graph.edges)
 
-        # in case no. of removals exceeds no. of edges
-        if not current_edges:
-            break
+        # create set and list of informed edges
+        informed_edges = [edge for edge in current_edges
+                        if edge[0] in infected_nodes or edge[1] in infected_nodes]
 
-        # identify set of edges that are connected to at least 1 infected node
-        informed_edges = {edge for edge in current_edges
-                        if edge[0] in infected_nodes or edge[1] in infected_nodes}
+        # preferentially choose edge adjacent to infected node
+        if informed_edges and randgen.random() < p:
+            removed_edge = randgen.choice(informed_edges)
+        else:
+            removed_edge = randgen.choice(current_edges)
 
-        # identify edges that arent connected to an infected node on either end
-        # i.e current edges - informed_edges
-        uninformed_edges = [edge for edge in current_edges
-                            if edge not in informed_edges]
+        graph.remove_edge(*removed_edge)
 
-        # decide how many edges should be informatively removed and otherwise
-        informed_remove_count = round(p * removal_count)
-        uninformed_remove_count = removal_count - informed_remove_count
-
-        # and sample from their respective edge lists
-        removed_informed = random.sample(informed_edges, informed_remove_count)
-        removed_uninformed = random.sample(uninformed_edges, uninformed_remove_count)
-
-        # and remove them all
-        removed_edges = removed_informed + removed_uninformed
-        graph.removes_edge_from(*removed_edges)
-
-        # prefer an edge adjacent to an infected node
-        # if informed_edges and randgen.random() < p:
-            # removed_edge = randgen.choice(informed_edges)
-        # else:
-            # removed_edge = randgen.choice(uninformed_edges)
-
-        # graph.remove_edge(*remove_edge)
-
+    return graph
 
 
 
@@ -108,6 +101,8 @@ def simulate_incomp_info_SIR(N, k, beta, gamma, rho, tau, p, q):
 
     # simulate until time tau and extract the infected nodes
     infected_nodes = run_first_sim(sim_g, beta, gamma, rho, tau)
+
+    first_edge_removal = edge_removal(sim_g, p, q, infected_nodes)
 
 
 
