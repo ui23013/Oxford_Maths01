@@ -3,16 +3,15 @@ import matplotlib.pyplot as plt
 import EoN as eon
 import random
 
-random.seed(0)
 
-def create_rrg(k, N):
+def create_rrg(k, N, seed):
     '''
     creates RRG
     Args:
         k: node degree
         N: no. of nodes
     '''
-    graph = nx.random_regular_graph(k, N)
+    graph = nx.random_regular_graph(k, N, seed=seed)
     return graph
 
 
@@ -27,7 +26,7 @@ def run_first_sim(graph, beta, gamma, rho, tau):
         tau: intervention time
     '''
     # simulate until first intervention
-    sim = eon.fast_SIR(graph, beta, gamma, rho=rho, tmax=tau, return_full_data=True)
+    sim = eon.Gillespie_SIR(graph, beta, gamma, rho=rho, tmax=tau, return_full_data=True)
 
     # and then extract states at intervention time, tau
     first_states = sim.get_statuses(time=tau)
@@ -35,11 +34,9 @@ def run_first_sim(graph, beta, gamma, rho, tau):
     # retrieve infected and recovered nodes at time tau
     infected_nodes = [node for node, status in first_states.items() if status == 'I']
 
-    # don't know if this is needed
-    # recovered_nodes = [node for node, status in first_states.items() if status == 'R']
+    recovered_nodes = [node for node, status in first_states.items() if status == 'R']
 
-
-    return infected_nodes, first_states
+    return infected_nodes, recovered_nodes, first_states
 
 
 def edge_removal(graph, p, q,  i_nodes):
@@ -82,31 +79,30 @@ def edge_removal(graph, p, q,  i_nodes):
 
     return graph
 
+
 def run_second_sim(graph, beta, gamma, initial_states,tmin, tmax):
-    # doesnt work, cant start fast_sir mid sim
-    # sim = eon.fast_SIR(graph, beta, gamma, status=initial_states,
-                       #tmin=tmin, tmax=tmax, return_full_data=True)
 
     # extract which nodes were infected/recovered at time tmin
     I_nodes = [node for node, status in initial_states.items() if status == 'I']
     R_nodes = [node for node, status in initial_states.items() if status == 'R']
 
-    sim = eon.fast_SIR(graph, beta, gamma, initial_infecteds=I_nodes, tmax = tmax, return_full_data = True)
-    # this isnt considering an 'initial_recoverds' so need to fix that
+    sim = eon.Gillespie_SIR(graph, beta, gamma, initial_infecteds=I_nodes, initial_recovereds=R_nodes, tmin=tmin,
+                            tmax=tmax, return_full_data=True)
+
     return sim
 
 
-def sim_single_intervention(N, k, beta, gamma, rho, tau, p, q, sim_duration):
+def sim_single_intervention(N, k, beta, gamma, rho, tau, p, q, sim_duration, seed):
     '''
     simulate the SIR model which models having incomplete information
     '''
 
     # create rrg graph
-    sim_g = create_rrg(k, N)
+    sim_g = create_rrg(k, N, seed)
     initial_edges = sim_g.number_of_edges()
 
     # simulate until time tau and extract the infected nodes
-    infected_nodes, first_states = run_first_sim(sim_g, beta, gamma, rho, tau)
+    infected_nodes, recovered_nodes, first_states = run_first_sim(sim_g, beta, gamma, rho, tau)
 
     # obtain graph after edge removal
     modified_graph = edge_removal(sim_g, p, q, infected_nodes)
@@ -124,12 +120,19 @@ def sim_single_intervention(N, k, beta, gamma, rho, tau, p, q, sim_duration):
     return modified_graph, edges_removed, final_infected, final_recovered, total_infected
 
 
-# !!! the recovered people at time tau are being neglected
-no_intervention = sim_single_intervention(N=1000, k=3, beta=0.4, gamma=0.1, rho=0.05, tau=20, p=1, q=0, sim_duration=100)
+# set graph seed for reproducibility
+graph_seed=random.seed(0)
+
+no_intervention = sim_single_intervention(N=1000, k=3, beta=0.4, gamma=0.1, rho=0.05, tau=20, p=1, q=0, sim_duration=100
+                                          , seed=graph_seed)
 print(no_intervention) # shows edges removed, final_infected = 0 and final_recovered, final_infected = n
+
 # perfect information
-test_run_p1 = sim_single_intervention(N=1000, k=3, beta=0.4, gamma=0.1, rho=0.05, tau=20, p=1, q=0.1, sim_duration=100)
+test_run_p1 = sim_single_intervention(N=1000, k=3, beta=0.4, gamma=0.1, rho=0.05, tau=20, p=1, q=0.1, sim_duration=100
+                                      , seed=graph_seed)
 print(test_run_p1)
+
 # random intervention
-test_run_p0= sim_single_intervention(N=1000, k=3, beta=0.4, gamma=0.1, rho=0.05, tau=20, p=0, q=0.1, sim_duration=100)
+test_run_p0= sim_single_intervention(N=1000, k=3, beta=0.4, gamma=0.1, rho=0.05, tau=20, p=0, q=0.1, sim_duration=100
+                                     , seed=graph_seed)
 print(test_run_p0)
