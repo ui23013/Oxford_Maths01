@@ -207,10 +207,11 @@ def parameter_sweep(N, k, beta, gamma, rho, sim_duration, n_runs, p_vals, q_vals
         return sweep_df
 
 
-p_values = list(np.linspace(0, 1, 5))
-q_values = list(np.linspace(0, 0.5, 5))
-tau_values = list(range(5, 16, 3))
+p_values = list(np.linspace(0, 1, 20))
+q_values = list(np.linspace(0, 0.5, 20))
+tau_values = list(range(5, 11, 5))
+# print(tau_values)
 
 trial_sweep = parameter_sweep(N=1000, k=3, beta=0.5, gamma=0.3, rho=0.05, sim_duration=1000, n_runs=10, p_vals=p_values,
-                            q_vals=q_values, tau_vals=tau_values, save_path='trial2_sweep_results.csv')
+                             q_vals=q_values, tau_vals=tau_values, save_path='trial4_sweep_results.csv')
 
