@@ -3,16 +3,11 @@ import matplotlib.pyplot as plt
 import EoN as eon
 import random
 import pandas as pd
+import numpy as np
 
 
-def create_rrg(k, N, seed):
-    '''
-    creates RRG
-    Args:
-        k: node degree
-        N: no. of nodes
-    '''
-    graph = nx.random_regular_graph(k, N, seed=seed)
+def create_rrg(k, N):
+    graph = nx.random_regular_graph(k, N)
     return graph
 
 
@@ -64,7 +59,10 @@ def edge_removal(graph, p, q,  i_nodes):
 
     for e in range(removal_count):
         # and list of all edges in the graph
-        current_edges = list(graph.edges)
+        current_edges = list(graph.edges())
+
+        if not current_edges:
+            break
 
         # create set and list of informed edges
         informed_edges = [edge for edge in current_edges
@@ -83,20 +81,22 @@ def edge_removal(graph, p, q,  i_nodes):
 
 
 def run_second_sim(graph, beta, gamma, infected_nodes, recovered_nodes,tmin, tmax):
-
+    '''
+    run simultation from time tau to tmax
+    '''
     sim = eon.Gillespie_SIR(graph, beta, gamma, initial_infecteds=infected_nodes, initial_recovereds=recovered_nodes,
                             tmin=tmin, tmax=tmax, return_full_data=True)
 
     return sim
 
 
-def sim_single_intervention(N, k, beta, gamma, rho, tau, p, q, sim_duration, seed):
+def sim_single_intervention(N, k, beta, gamma, rho, tau, p, q, sim_duration):
     '''
     simulate the SIR model which models having incomplete information
     '''
 
     # create rrg graph
-    sim_g = create_rrg(k, N, seed)
+    sim_g = create_rrg(k, N)
     initial_edges = sim_g.number_of_edges()
 
     # simulate until time tau and extract the infected nodes
@@ -121,29 +121,19 @@ def sim_single_intervention(N, k, beta, gamma, rho, tau, p, q, sim_duration, see
     return modified_graph, edges_removed, final_infected, final_recovered, total_infected, len(infected_nodes)
 
 
-# # set graph seed for reproducibility
-# graph_seed = 120
-# no_intervention = sim_single_intervention(N=1000, k=3, beta=0.4, gamma=0.1, rho=0.05, tau=20, p=1, q=0, sim_duration=500
-#                                           , seed=graph_seed)
-# print('No intervention stats', no_intervention)
-#
-# # random intervention
-# test_run_p0= sim_single_intervention(N=1000, k=3, beta=0.4, gamma=0.1, rho=0.05, tau=20, p=0, q=0.1, sim_duration=500
-#                                      , seed=graph_seed)
-# print('Random intervention stats',test_run_p0)
-#
-# # perfect information
-# test_run_p1 = sim_single_intervention(N=1000, k=3, beta=0.4, gamma=0.1, rho=0.05, tau=20, p=1, q=0.1, sim_duration=500
-#                                       , seed=graph_seed)
-# print('Perfect intervention stats',test_run_p1)
-
-
-def run_repeated_sims(N, k, beta, gamma, rho, tau, p, q, sim_duration, seed, n_runs=25):
-    records = []
+def run_repeated_sims(N, k, beta, gamma, rho, tau, p, q, sim_duration, n_runs=25):
+    '''
+    runs same simulation multiple times
+    Args:
+        sim_duration: how long the sim should be run from
+        seed: graph no.
+        n_runs: how many repeats
+    '''
+    records = [] # initialise empty list to record data
     for _ in range(n_runs):
         (modified_graph, edges_removed, final_infected, final_recovered, total_infected, seed_infected) = (
             sim_single_intervention(N=N, k=k, beta=beta, gamma=gamma, rho=rho, tau=tau, p=p, q=q,
-                                    sim_duration=sim_duration, seed=seed))
+                                    sim_duration=sim_duration))
 
         records.append({'seed_infected': seed_infected, 'edges_removed': edges_removed, 'final_infected':final_infected,
                         'final_recovered': final_recovered, 'total_infected': total_infected,})
@@ -151,19 +141,19 @@ def run_repeated_sims(N, k, beta, gamma, rho, tau, p, q, sim_duration, seed, n_r
     return pd.DataFrame(records)
 
 
-# run sim multiple times to get data
-# df = run_repeated_sims(N=1000, k=3, beta=0.4, gamma=0.1, rho=0.05, tau=20, p=1, q=0.1, sim_duration=500, seed=120,
-#                        n_runs=25)
-# df['seed_infected'].describe()
-# df['total_infected'].describe()
+def compare_interventions(N, k, beta, gamma, rho, tau, sim_duration, n_runs):
+    '''
+    compare NI, RI and PI on a graph
+    Args:
+        n_runs: how many comparisons should be done
+    '''
 
-def compare_interventions(N, k, beta, gamma, rho, tau, sim_duration, seed, n_runs):
     df_no = run_repeated_sims(N=N, k=k, beta=beta, gamma=gamma, rho=rho, tau=tau,
-                               p=1, q=0.0, sim_duration=sim_duration, seed=seed, n_runs=n_runs)
+                               p=1, q=0.0, sim_duration=sim_duration,n_runs=n_runs)
     df_random = run_repeated_sims(N=N, k=k, beta=beta, gamma=gamma, rho=rho, tau=tau,
-                                   p=0, q=0.1, sim_duration=sim_duration, seed=seed, n_runs=n_runs)
+                                   p=0, q=0.1, sim_duration=sim_duration, n_runs=n_runs)
     df_perfect = run_repeated_sims(N=N, k=k, beta=beta, gamma=gamma, rho=rho, tau=tau,
-                                    p=1, q=0.1, sim_duration=sim_duration, seed=seed, n_runs=n_runs)
+                                    p=1, q=0.1, sim_duration=sim_duration, n_runs=n_runs)
 
     return pd.Series({
         'no_intervention': (df_no['final_recovered'] / N).mean(),
@@ -172,6 +162,55 @@ def compare_interventions(N, k, beta, gamma, rho, tau, sim_duration, seed, n_run
         }, name='mean_r_inf')
 
 
-r_inf_summary = compare_interventions(N=1000, k=3, beta=0.5, gamma=0.3, rho=0.05, tau=10, sim_duration=1000, seed=120,
-                                      n_runs=100)
-print(r_inf_summary)
+# r_inf_summary = compare_interventions(N=1000, k=3, beta=0.5, gamma=0.3, rho=0.05, tau=10, sim_duration=1000, n_runs=5)
+# print(r_inf_summary)
+
+
+def parameter_sweep(N, k, beta, gamma, rho, sim_duration, n_runs, p_vals, q_vals, tau_vals,
+                    metric='final_recovered', save_path=None):
+        '''
+        does a parameter sweep across (p, q, tau) and records mean r_inf for a given parameter combination
+        Args:
+            p_vals: list of values for probability of informed edge removal, p
+            q_vals: list of values for proportion of edges removed at intervention, q
+            tau_vals: list of values for intervention time, tau
+            metric: the metric that we find a mean value for, in this instance r_inf
+            save_path: to save to device
+        '''
+        records = [] # initialise empty list to store data
+
+        total_combos = len(p_vals) * len(q_vals) * len(tau_vals)
+        combo_num = 0
+
+        for tau in tau_vals:
+            for p_val in p_vals:
+                for q_val in q_vals:
+                    combo_num += 1 # add 1 go combo counter
+
+                    # for given combination, repeatedly run an sir sim
+                    df = run_repeated_sims(N=N, k=k, beta=beta, gamma=gamma, rho=rho, tau=tau, p=p_val, q=q_val
+                                           ,sim_duration=sim_duration, n_runs=n_runs)
+                    # and get average r_inf value (as % of population, in case we wanna change that too)
+                    mean_r_inf = (df[metric]/N).mean()
+                    # append param combo and corresponding mean r_inf value
+                    records.append({'p': p_val, 'q': q_val, 'tau': tau, 'mean_r_inf': mean_r_inf})
+
+                    print(f'[{combo_num}/{total_combos}] p={p_val}, q={q_val}, tau={tau} '
+                          f'mean_r_inf={mean_r_inf:.4f}')
+
+        sweep_df = pd.DataFrame(records)
+
+        if save_path is not None:
+            sweep_df.to_csv(save_path, index=False)
+            print(f'Saved sweep results to {save_path}')
+
+        return sweep_df
+
+
+p_values = list(np.linspace(0, 1, 5))
+q_values = list(np.linspace(0, 0.5, 5))
+tau_values = list(range(5, 16, 3))
+
+trial_sweep = parameter_sweep(N=1000, k=3, beta=0.5, gamma=0.3, rho=0.05, sim_duration=1000, n_runs=10, p_vals=p_values,
+                            q_vals=q_values, tau_vals=tau_values, save_path='trial2_sweep_results.csv')
+
