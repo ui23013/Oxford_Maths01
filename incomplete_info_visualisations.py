@@ -169,7 +169,7 @@ def plot_network_snapshots(results, sim_duration):
                  (modified_graph, second_sim.get_statuses(time=sim_duration), r"$t=t_f$", [])] # t=t_f
 
     for ax, (graph, states, title, highlight_edges) in zip(axes, snapshots):
-        nx.draw_networkx(graph, pos, node_color=node_colours(states), node_size=50, edge_color='lightgrey',
+        nx.draw_networkx(graph, pos, node_color=node_colours(states), node_size=25, edge_color='lightgrey',
                          with_labels=False, ax=ax)
 
         if highlight_edges:
@@ -210,7 +210,7 @@ def animate_sim(results, sim_duration, pos):
             graph = modified_graph
             states = second_sim.get_statuses(time=t)
 
-        nx.draw_networkx(graph, pos, node_color=node_colours(states), node_size=50, edge_color='lightgrey',
+        nx.draw_networkx(graph, pos, node_color=node_colours(states), node_size=25, edge_color='lightgrey',
                          with_labels=False, ax=ax)
 
         ax.set_title(rf"$t={t:.2f}$")
@@ -221,9 +221,9 @@ def animate_sim(results, sim_duration, pos):
     return ani
 
 
-sim_dur=100
+sim_dur=50
 # trial results
-trial_results = sim_single_intervention(N=200, k=3, beta=0.4, gamma=0.3, rho=0.05, tau=5, p=0.8, q=0.3
+trial_results = sim_single_intervention(N=1000, k=3, beta=0.4, gamma=0.2, rho=0.05, tau=15, p=0.8, q=0.3
                                         , sim_duration=sim_dur)
 
 # trial figures
@@ -240,3 +240,6 @@ output_path = "/Users/joycewilliamslt/Documents/GitHub/Oxford_Maths01/trial_anim
 trial_ani.save(output_path, writer="pillow")
 print(f"Saved animation to {output_path}")
 # to view the gif you can drag the .gif to your safari browser icon/chrome and it should 'animate' there
+
+
+# file path: "/Users/joycewilliamslt/Documents/GitHub/Oxford_Maths01/trial_animation.gif"
