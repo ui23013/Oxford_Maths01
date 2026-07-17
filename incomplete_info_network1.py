@@ -86,10 +86,15 @@ def run_second_sim(graph, beta, gamma, infected_nodes, recovered_nodes,tmin, tma
     '''
     run simultation from time tau to tmax
     '''
-    sim = eon.Gillespie_SIR(graph, beta, gamma, initial_infecteds=infected_nodes, initial_recovereds=recovered_nodes,
+    try:
+        sim = eon.Gillespie_SIR(graph, beta, gamma, initial_infecteds=infected_nodes, initial_recovereds=recovered_nodes,
                             tmin=tmin, tmax=tmax, return_full_data=True)
 
-    return sim
+        return sim
+    except ZeroDivisionError:
+
+    # if no transmission is possible, return current state
+        return None
 
 
 def sim_single_intervention(N, k, beta, gamma, rho, tau, p, q, sim_duration):
@@ -114,11 +119,13 @@ def sim_single_intervention(N, k, beta, gamma, rho, tau, p, q, sim_duration):
     # and run a second sum to see results of intervention
     second_sim = run_second_sim(modified_graph, beta, gamma, infected_nodes, recovered_nodes, tmin=tau, tmax=sim_duration)
 
-    final_states = second_sim.get_statuses(time=sim_duration) # states at final time
-
-    # outcomes
-    final_infected = sum(1 for status in final_states.values() if status == 'I')
-    final_recovered = sum(1 for status in final_states.values() if status == 'R')
+    if second_sim is None:  # Simulation couldn't run (no transmission possible)
+        final_infected = len(infected_nodes)
+        final_recovered = len(recovered_nodes)
+    else:
+        final_states = second_sim.get_statuses(time=sim_duration)
+        final_infected = sum(1 for status in final_states.values() if status == 'I')
+        final_recovered = sum(1 for status in final_states.values() if status == 'R')
 
     # print(final_infected) # to ensure epidemic is in fact over
 
@@ -250,7 +257,7 @@ def parameter_sweep(N, k_vals, beta_range, gamma_range, rho, sim_duration, n_run
 if __name__ == '__main__':
     p_values = list(np.linspace(0, 1, 10))
     q_values = list(np.linspace(0, 0.5, 10))
-    tau_values = list(range(10, 21, 10))
+    tau_values = list(range(5, 11, 10))
     # print(tau_values)
 
     # min and max values for beta and gamma
@@ -259,7 +266,7 @@ if __name__ == '__main__':
     k_range = [3, 4, 5]
     num_workers = 4
 
-    trial_sweep = parameter_sweep(N=2500, k_vals=k_range, beta_range=beta_range, gamma_range=gamma_range, rho=0.05,
-                                  sim_duration=500,
-                                  n_runs=10, p_vals=p_values, q_vals=q_values, tau_vals=tau_values,
-                                  save_path='trial5_sweep_results.csv', n_workers=num_workers)
+    trial_sweep = parameter_sweep(N=250, k_vals=k_range, beta_range=beta_range, gamma_range=gamma_range, rho=0.05,
+                                  sim_duration=250,
+                                  n_runs=5, p_vals=p_values, q_vals=q_values, tau_vals=tau_values,
+                                  save_path='trial_sweep_results1707.csv', n_workers=num_workers)

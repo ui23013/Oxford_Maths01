@@ -9,6 +9,7 @@ from plotting_style import set_plot_style
 
 set_plot_style()
 
+
 def create_rrg(k, N):
     graph = nx.random_regular_graph(k, N)
     return graph

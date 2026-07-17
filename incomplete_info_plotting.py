@@ -31,7 +31,7 @@ def plot_pq_heatmap(sweep_df, tau, val_col='mean_r_inf'):
     pq_grid = pq_grid.sort_index(axis=1, ascending=True)  # p increasing rightward
 
     fig, ax = plt.subplots(figsize=(6, 5))
-    sb.heatmap(pq_grid, annot=False, cmap=heatmap_cmap, cbar_kws={"label": r"Mean $R_\infty (\%)$"}, ax=ax)
+    sb.heatmap(pq_grid, annot=False, cmap=heatmap_cmap, vmin=0, vmax=1, cbar_kws={"label": r"Mean $R_\infty$"}, ax=ax)
     ax.set_xlabel(r"$p$")
     ax.set_ylabel(r"$q$")
     ax.set_xticklabels([f"{x:.3f}" for x in pq_grid.columns], rotation=45, ha="right")
@@ -43,9 +43,9 @@ def plot_pq_heatmap(sweep_df, tau, val_col='mean_r_inf'):
     return fig,ax
 
 
-trial_csv = load_sweep_results('/Users/joycewilliamslt/Documents/GitHub/Oxford_Maths01/trial4_sweep_results.csv')
+trial_csv = load_sweep_results('/Users/joycewilliamslt/Documents/GitHub/Oxford_Maths01/trial_sweep_results1707.csv')
 
-tau_vals = [5, 10]
+tau_vals = [5]
 
 for tau in tau_vals:
     trial_heatmap = plot_pq_heatmap(trial_csv, tau, val_col='mean_r_inf')
