@@ -84,7 +84,7 @@ def edge_removal(graph, p, q,  i_nodes):
 
 def run_second_sim(graph, beta, gamma, infected_nodes, recovered_nodes,tmin, tmax):
     '''
-    run simultation from time tau to tmax 
+    run simultation from time tau to tmax
     '''
     sim = eon.Gillespie_SIR(graph, beta, gamma, initial_infecteds=infected_nodes, initial_recovereds=recovered_nodes,
                             tmin=tmin, tmax=tmax, return_full_data=True)
@@ -119,6 +119,9 @@ def sim_single_intervention(N, k, beta, gamma, rho, tau, p, q, sim_duration):
     # outcomes
     final_infected = sum(1 for status in final_states.values() if status == 'I')
     final_recovered = sum(1 for status in final_states.values() if status == 'R')
+
+    # print(final_infected) # to ensure epidemic is in fact over
+
     total_infected = final_infected + final_recovered
 
     return modified_graph, edges_removed, final_infected, final_recovered, total_infected, len(infected_nodes)
@@ -213,7 +216,6 @@ def parameter_sweep(N, k_vals, beta_range, gamma_range, rho, sim_duration, n_run
         total_combos = len(param_combos
                            )
         records = [] # initialise empty list to store data
-
         combo_num = 0
 
         for combo_num, (tau, p_val, q_val) in enumerate(param_combos, 1):
@@ -245,24 +247,10 @@ def parameter_sweep(N, k_vals, beta_range, gamma_range, rho, sim_duration, n_run
         return sweep_df
 
 
-# p_values = list(np.linspace(0, 1, 10))
-# q_values = list(np.linspace(0, 0.5, 10))
-# tau_values = list(range(5, 11, 10))
-# # print(tau_values)
-#
-# # min and max values for beta and gamma
-# beta_range = (0.25, 0.55)
-# gamma_range = (0.1, 0.4)
-# k_range = [3, 4, 5]
-#
-# trial_sweep = parameter_sweep(N=500, k_vals=k_range, beta_range=beta_range, gamma_range=gamma_range, rho=0.05, sim_duration=1000,
-#                               n_runs=25, p_vals=p_values, q_vals=q_values, tau_vals=tau_values,
-#                               save_path='tau5_sweep_results.csv')
-
 if __name__ == '__main__':
     p_values = list(np.linspace(0, 1, 10))
     q_values = list(np.linspace(0, 0.5, 10))
-    tau_values = list(range(5, 11, 10))
+    tau_values = list(range(10, 21, 10))
     # print(tau_values)
 
     # min and max values for beta and gamma

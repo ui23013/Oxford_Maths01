@@ -5,7 +5,9 @@ import random
 import pandas as pd
 import numpy as np
 from matplotlib.animation import FuncAnimation
+from plotting_style import set_plot_style
 
+set_plot_style()
 
 def create_rrg(k, N):
     graph = nx.random_regular_graph(k, N)
@@ -137,13 +139,13 @@ def node_colours(states):
 
     for node in sorted(states):
         if states[node] == 'S':
-            colours.append('blue')
+            colours.append('darkgoldenrod')
 
         elif states[node] == 'I':
-            colours.append('red')
+            colours.append('firebrick')
 
         elif states[node] == 'R':
-            colours.append('green')
+            colours.append('teal')
 
     return colours
 
@@ -221,7 +223,7 @@ def animate_sim(results, sim_duration, pos):
     return ani
 
 
-sim_dur=50
+sim_dur=100
 # trial results
 trial_results = sim_single_intervention(N=1000, k=3, beta=0.4, gamma=0.2, rho=0.05, tau=15, p=0.8, q=0.3
                                         , sim_duration=sim_dur)
