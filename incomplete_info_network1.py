@@ -166,11 +166,14 @@ def compare_interventions(N, k, beta, gamma, rho, tau, sim_duration, n_runs):
 # print(r_inf_summary)
 
 
-def parameter_sweep(N, k, beta, gamma, rho, sim_duration, n_runs, p_vals, q_vals, tau_vals,
+def parameter_sweep(N, k_vals, beta_range, gamma_range, rho, sim_duration, n_runs, p_vals, q_vals, tau_vals,
                     metric='final_recovered', save_path=None):
         '''
         does a parameter sweep across (p, q, tau) and records mean r_inf for a given parameter combination
         Args:
+            k_vals: list of possible degree values for graph
+            beta_range: min and max beta values for sampling of beta
+            gamma_range: same as above but for gamma
             p_vals: list of values for probability of informed edge removal, p
             q_vals: list of values for proportion of edges removed at intervention, q
             tau_vals: list of values for intervention time, tau
@@ -187,15 +190,21 @@ def parameter_sweep(N, k, beta, gamma, rho, sim_duration, n_runs, p_vals, q_vals
                 for q_val in q_vals:
                     combo_num += 1 # add 1 go combo counter
 
+                    # randomly sample beta and gamma
+                    beta = np.random.uniform(beta_range[0], beta_range[-1])
+                    gamma = np.random.uniform(gamma_range[0], gamma_range[-1])
+                    k = np.random.choice(k_vals)
+
                     # for given combination, repeatedly run an sir sim
                     df = run_repeated_sims(N=N, k=k, beta=beta, gamma=gamma, rho=rho, tau=tau, p=p_val, q=q_val
                                            ,sim_duration=sim_duration, n_runs=n_runs)
                     # and get average r_inf value (as % of population, in case we wanna change that too)
                     mean_r_inf = (df[metric]/N).mean()
-                    # append param combo and corresponding mean r_inf value
-                    records.append({'p': p_val, 'q': q_val, 'tau': tau, 'mean_r_inf': mean_r_inf})
+                    # append param combo and corresponding mean r_inf value plus beta, gamma and k used
+                    records.append({'p': p_val, 'q': q_val, 'tau': tau,  'k': k, 'beta': beta, 'gamma': gamma,
+                                    'mean_r_inf': mean_r_inf})
 
-                    print(f'[{combo_num}/{total_combos}] p={p_val}, q={q_val}, tau={tau} '
+                    print(f'[{combo_num}/{total_combos}] p={p_val}, q={q_val}, tau={tau}, k={k}, beta={beta:.4f}, gamma={gamma:.4f} '
                           f'mean_r_inf={mean_r_inf:.4f}')
 
         sweep_df = pd.DataFrame(records)
@@ -207,11 +216,17 @@ def parameter_sweep(N, k, beta, gamma, rho, sim_duration, n_runs, p_vals, q_vals
         return sweep_df
 
 
-p_values = list(np.linspace(0, 1, 20))
-q_values = list(np.linspace(0, 0.5, 20))
-tau_values = list(range(5, 11, 5))
+p_values = list(np.linspace(0, 1, 10))
+q_values = list(np.linspace(0, 0.5, 10))
+tau_values = list(range(5, 11, 10))
 # print(tau_values)
 
-trial_sweep = parameter_sweep(N=1000, k=3, beta=0.5, gamma=0.3, rho=0.05, sim_duration=1000, n_runs=10, p_vals=p_values,
-                             q_vals=q_values, tau_vals=tau_values, save_path='trial5_sweep_results.csv')
+# min and max values for beta and gamma
+beta_range = (0.25, 0.55)
+gamma_range = (0.1, 0.4)
+k_range = [3, 4, 5]
+
+trial_sweep = parameter_sweep(N=500, k_vals=k_range, beta_range=beta_range, gamma_range=gamma_range, rho=0.05, sim_duration=1000,
+                              n_runs=25, p_vals=p_values, q_vals=q_values, tau_vals=tau_values,
+                              save_path='tau5_sweep_results.csv')
 
