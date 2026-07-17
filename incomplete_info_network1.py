@@ -180,32 +180,33 @@ def parameter_sweep(N, k_vals, beta_range, gamma_range, rho, sim_duration, n_run
             metric: the metric that we find a mean value for, in this instance r_inf
             save_path: to save to device
         '''
+        # to optimise, precompute all param combos
+        param_combos = [(tau, p_val, q_val) for tau in tau_vals for p_val in p_vals for q_val in q_vals]
+        total_combos = len(param_combos
+                           )
         records = [] # initialise empty list to store data
 
-        total_combos = len(p_vals) * len(q_vals) * len(tau_vals)
         combo_num = 0
 
-        for tau in tau_vals:
-            for p_val in p_vals:
-                for q_val in q_vals:
-                    combo_num += 1 # add 1 go combo counter
+        for combo_num, (tau, p_val, q_val) in enumerate(param_combos, 1):
 
-                    # randomly sample beta and gamma
-                    beta = np.random.uniform(beta_range[0], beta_range[-1])
-                    gamma = np.random.uniform(gamma_range[0], gamma_range[-1])
-                    k = np.random.choice(k_vals)
+            # randomly sample beta and gamma
+            beta = np.random.uniform(beta_range[0], beta_range[-1])
+            gamma = np.random.uniform(gamma_range[0], gamma_range[-1])
+            k = np.random.choice(k_vals)
 
-                    # for given combination, repeatedly run an sir sim
-                    df = run_repeated_sims(N=N, k=k, beta=beta, gamma=gamma, rho=rho, tau=tau, p=p_val, q=q_val
-                                           ,sim_duration=sim_duration, n_runs=n_runs)
-                    # and get average r_inf value (as % of population, in case we wanna change that too)
-                    mean_r_inf = (df[metric]/N).mean()
-                    # append param combo and corresponding mean r_inf value plus beta, gamma and k used
-                    records.append({'p': p_val, 'q': q_val, 'tau': tau,  'k': k, 'beta': beta, 'gamma': gamma,
-                                    'mean_r_inf': mean_r_inf})
+            # for given combination, repeatedly run an sir sim
+            df = run_repeated_sims(N=N, k=k, beta=beta, gamma=gamma, rho=rho, tau=tau, p=p_val, q=q_val
+                                    ,sim_duration=sim_duration, n_runs=n_runs)
 
-                    print(f'[{combo_num}/{total_combos}] p={p_val}, q={q_val}, tau={tau}, k={k}, beta={beta:.4f}, gamma={gamma:.4f} '
-                          f'mean_r_inf={mean_r_inf:.4f}')
+            # and get average r_inf value (as % of population) vectorised
+            mean_r_inf = (df[metric]/N).mean()
+            # append param combo and corresponding mean r_inf value plus beta, gamma and k used
+            records.append({'p': p_val, 'q': q_val, 'tau': tau,  'k': k, 'beta': beta, 'gamma': gamma,
+                            'mean_r_inf': mean_r_inf})
+
+            print(f'[{combo_num}/{total_combos}] p={p_val}, q={q_val}, tau={tau}, k={k}, beta={beta:.4f}, gamma={gamma:.4f} '
+                    f'mean_r_inf={mean_r_inf:.4f}')
 
         sweep_df = pd.DataFrame(records)
 
