@@ -172,15 +172,16 @@ def plot_network_snapshots(results, sim_duration):
                  (modified_graph, second_sim.get_statuses(time=sim_duration), r"$t=t_f$", [])] # t=t_f
 
     for ax, (graph, states, title, highlight_edges) in zip(axes, snapshots):
-        nx.draw_networkx(graph, pos, node_color=node_colours(states), node_size=25, edge_color='lightgrey',
+        nx.draw_networkx(graph, pos, node_color=node_colours(states), node_size=20, edge_color='lightgrey',
                          with_labels=False, ax=ax)
 
         if highlight_edges:
-            nx.draw_networkx_edges(graph, pos, edgelist=highlight_edges, edge_color='red', width=2, ax=ax)
+            nx.draw_networkx_edges(graph, pos, edgelist=highlight_edges, edge_color='olivedrab', width=2, ax=ax)
         ax.set_title(title)
         ax.axis('off')
 
     plt.tight_layout()
+    plt.savefig('t0_to_tf_snapshots_1000', format='pdf')
     plt.show()
 
     return pos
@@ -213,7 +214,7 @@ def animate_sim(results, sim_duration, pos):
             graph = modified_graph
             states = second_sim.get_statuses(time=t)
 
-        nx.draw_networkx(graph, pos, node_color=node_colours(states), node_size=25, edge_color='lightgrey',
+        nx.draw_networkx(graph, pos, node_color=node_colours(states), node_size=20, edge_color='lightgrey',
                          with_labels=False, ax=ax)
 
         ax.set_title(rf"$t={t:.2f}$")
@@ -224,9 +225,9 @@ def animate_sim(results, sim_duration, pos):
     return ani
 
 
-sim_dur=100
+sim_dur=50
 # trial results
-trial_results = sim_single_intervention(N=1000, k=3, beta=0.4, gamma=0.2, rho=0.05, tau=15, p=0.8, q=0.3
+trial_results = sim_single_intervention(N=1000, k=4, beta=0.4, gamma=0.25, rho=0.05, tau=10, p=0.75, q=0.25
                                         , sim_duration=sim_dur)
 
 # trial figures

@@ -31,7 +31,6 @@ def run_first_sim(graph, beta, gamma, rho, tau):
 
     # retrieve infected and recovered nodes at time tau
     infected_nodes = [node for node, status in first_states.items() if status == 'I']
-
     recovered_nodes = [node for node, status in first_states.items() if status == 'R']
 
     return infected_nodes, recovered_nodes, first_states
@@ -93,8 +92,7 @@ def run_second_sim(graph, beta, gamma, infected_nodes, recovered_nodes,tmin, tma
         return sim
     except ZeroDivisionError:
 
-    # if no transmission is possible, return current state
-        return None
+        return None # if no transmission is possible, return current state
 
 
 def sim_single_intervention(N, k, beta, gamma, rho, tau, p, q, sim_duration):
@@ -127,7 +125,7 @@ def sim_single_intervention(N, k, beta, gamma, rho, tau, p, q, sim_duration):
         final_infected = sum(1 for status in final_states.values() if status == 'I')
         final_recovered = sum(1 for status in final_states.values() if status == 'R')
 
-    # print(final_infected) # to ensure epidemic is in fact over
+    # print(final_infected) # debug to ensure epidemic is in fact over
 
     total_infected = final_infected + final_recovered
 
@@ -204,7 +202,7 @@ def compare_interventions(N, k, beta, gamma, rho, tau, sim_duration, n_runs):
 # print(r_inf_summary)
 
 
-def parameter_sweep(N, k_vals, beta_range, gamma_range, rho, sim_duration, n_runs, p_vals, q_vals, tau_vals,
+def parameter_sweep(N, k_vals, beta, gamma, rho, sim_duration, n_runs, p_vals, q_vals, tau_vals,
                     metric='final_recovered', save_path=None, n_workers=None):
         '''
         does a parameter sweep across (p, q, tau) and records mean r_inf for a given parameter combination
@@ -227,9 +225,9 @@ def parameter_sweep(N, k_vals, beta_range, gamma_range, rho, sim_duration, n_run
 
         for combo_num, (tau, p_val, q_val) in enumerate(param_combos, 1):
 
-            # randomly sample beta and gamma
-            beta = np.random.uniform(beta_range[0], beta_range[-1])
-            gamma = np.random.uniform(gamma_range[0], gamma_range[-1])
+            # # randomly sample beta and gamma
+            # beta = np.random.uniform(beta_range[0], beta_range[-1])
+            # gamma = np.random.uniform(gamma_range[0], gamma_range[-1])
             k = np.random.choice(k_vals)
 
             # for given combination, repeatedly run an sir sim
@@ -257,16 +255,16 @@ def parameter_sweep(N, k_vals, beta_range, gamma_range, rho, sim_duration, n_run
 if __name__ == '__main__':
     p_values = list(np.linspace(0, 1, 10))
     q_values = list(np.linspace(0, 0.5, 10))
-    tau_values = list(range(5, 11, 10))
+    tau_values = list(range(10, 11, 10))
     # print(tau_values)
 
     # min and max values for beta and gamma
-    beta_range = (0.25, 0.55)
-    gamma_range = (0.1, 0.4)
-    k_range = [3, 4, 5]
-    num_workers = 4
+    beta = 0.4
+    gamma = 0.2
+    k_range = [3]
+    num_workers = 6
 
-    trial_sweep = parameter_sweep(N=250, k_vals=k_range, beta_range=beta_range, gamma_range=gamma_range, rho=0.05,
-                                  sim_duration=250,
-                                  n_runs=5, p_vals=p_values, q_vals=q_values, tau_vals=tau_values,
-                                  save_path='trial_sweep_results1707.csv', n_workers=num_workers)
+    trial_sweep = parameter_sweep(N=1000, k_vals=k_range, beta=beta, gamma=gamma, rho=0.05,
+                                  sim_duration=75,
+                                  n_runs=1000, p_vals=p_values, q_vals=q_values, tau_vals=tau_values,
+                                  save_path='sweep_results_tau3_2007.csv', n_workers=num_workers)
