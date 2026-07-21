@@ -15,7 +15,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sb
-from plotting_style import set_plot_style
+from plotting_style import set_plot_style, heatmap_cmap
 
 set_plot_style()
 
@@ -66,7 +66,7 @@ def plot_pq_heatmap_single(sweep_df, tau, delay, val_col='mean_final_epidemic_fr
     im = sb.heatmap(
         pq_grid,
         annot=False,
-        cmap='viridis',
+        cmap=heatmap_cmap,
         cbar_kws={"label": r"Mean $R_\infty$ (fraction)"},
         ax=ax,
         vmin=0,
@@ -87,9 +87,9 @@ def plot_pq_heatmap_single(sweep_df, tau, delay, val_col='mean_final_epidemic_fr
 
     plt.tight_layout()
 
-    if save_path is not None:
-        fig.savefig(save_path, dpi=300, bbox_inches='tight')
-        print(f"Saved figure: {save_path}")
+    # if save_path is not None:
+    #     fig.savefig(save_path, dpi=300, bbox_inches='tight')
+    #     print(f"Saved figure: {save_path}")
 
     return fig, ax
 
@@ -98,29 +98,34 @@ def plot_pq_heatmap_grid(sweep_df, tau_vals, delay_vals, val_col='mean_final_epi
                          save_path=None):
     '''
     Create a grid of heatmaps showing p,q parameter space for all tau and delay combinations.
+    Organized as a tau vs delta grid (tau increases left-to-right, delta increases bottom-to-top).
     '''
     n_tau = len(tau_vals)
     n_delay = len(delay_vals)
 
-    fig, axes = plt.subplots(n_delay, n_tau, figsize=(5 * n_tau, 4 * n_delay))
-
-    # Ensure axes is 2D even if only one row/column
-    if n_tau == 1 or n_delay == 1:
-        axes = axes.reshape(n_delay, n_tau)
+    # Create figure with space for colorbar on the right
+    fig = plt.figure(figsize=(3 * n_tau + 1, 3 * n_delay))
+    gs = fig.add_gridspec(n_delay, n_tau, right=0.92, wspace=0.3, hspace=0.35)
 
     # Find global min/max for consistent colorbar scaling
     vmin = sweep_df[val_col].min()
     vmax = sweep_df[val_col].max()
 
-    for i, delay in enumerate(delay_vals):
-        for j, tau in enumerate(tau_vals):
-            ax = axes[i, j]
+    # Sort tau and delay values
+    tau_vals_sorted = sorted(tau_vals)
+    delay_vals_sorted = sorted(delay_vals, reverse=True)  # Reverse so higher delays are at top
+
+    first_im = None
+    for i, delay in enumerate(delay_vals_sorted):
+        for j, tau in enumerate(tau_vals_sorted):
+            ax = fig.add_subplot(gs[i, j])
 
             filtered_data = sweep_df[(sweep_df['tau'] == tau) & (sweep_df['delay'] == delay)]
 
             if filtered_data.empty:
                 ax.text(0.5, 0.5, f'No data\nτ={tau}, δ={delay}',
-                        ha='center', va='center', transform=ax.transAxes)
+                        ha='center', va='center', transform=ax.transAxes,
+                        fontsize=10)
                 ax.set_xticks([])
                 ax.set_yticks([])
                 continue
@@ -130,27 +135,52 @@ def plot_pq_heatmap_grid(sweep_df, tau_vals, delay_vals, val_col='mean_final_epi
             pq_grid = pq_grid.sort_index(ascending=False)
             pq_grid = pq_grid.sort_index(axis=1, ascending=True)
 
-            sb.heatmap(pq_grid, annot=False, cmap='viridis', ax=ax, cbar=False, vmin=vmin, vmax=vmax)
+            im = sb.heatmap(
+                pq_grid,
+                annot=False,
+                cmap='viridis',
+                ax=ax,
+                cbar=False,
+                vmin=vmin,
+                vmax=vmax
+            )
+
+            # Store first image for colorbar reference
+            if first_im is None:
+                first_im = im
 
             # Set ticks and labels properly to avoid mismatch error
             ax.set_xticks(np.arange(len(pq_grid.columns)) + 0.5)
             ax.set_yticks(np.arange(len(pq_grid.index)) + 0.5)
             ax.set_xticklabels([f"{x:.2f}" for x in pq_grid.columns],
-                               rotation=45, ha="right", fontsize=9)
+                               rotation=45, ha="right", fontsize=8)
             ax.set_yticklabels([f"{y:.2f}" for y in pq_grid.index],
-                               rotation=0, fontsize=9)
+                               rotation=0, fontsize=8)
 
-            ax.set_xlabel(r"$p$" if i == n_delay - 1 else "")
-            ax.set_ylabel(r"$q$" if j == 0 else "")
-            ax.set_title(rf"$\tau = {tau}$, $\delta = {delay}$", fontsize=11)
+            # Only show axis labels on edges
+            if j == 0:
+                ax.set_ylabel(r"$q$", fontsize=10)
+            else:
+                ax.set_ylabel("")
+
+            if i == n_delay - 1:
+                ax.set_xlabel(r"$p$", fontsize=10)
+            else:
+                ax.set_xlabel("")
+
+            # Title with tau and delta
+            ax.set_title(rf"$\tau = {tau}$, $\delta = {delay}$", fontsize=11, pad=8)
             ax.grid(False)
 
-    # Add shared colorbar
-    fig.colorbar(axes[0, 0].collections[0], ax=axes.ravel().tolist(),
-                 label=r"Mean $R_\infty$ (fraction)", shrink=0.8)
+    # Add colorbar on the right side
+    cbar_ax = fig.add_axes([0.94, 0.15, 0.02, 0.7])
+    cbar = fig.colorbar(first_im.collections[0], cax=cbar_ax)
+    cbar.set_label(r"Mean $R_\infty$ (fraction)", fontsize=11)
 
-    fig.suptitle(r"Hybrid Model: Effect of Reporting Delay ($\delta$) and Incomplete Information ($p$, $q$)",
-                 fontsize=14, y=1.00)
+    fig.suptitle(
+        r"Hybrid Model: Effect of Reporting Delay ($\delta$, vertical) and Intervention Time ($\tau$, horizontal) on $(p, q)$ Space",
+        fontsize=13, y=0.98
+    )
 
     plt.tight_layout()
 
@@ -158,7 +188,7 @@ def plot_pq_heatmap_grid(sweep_df, tau_vals, delay_vals, val_col='mean_final_epi
         fig.savefig(save_path, dpi=300, bbox_inches='tight')
         print(f"Saved figure: {save_path}")
 
-    return fig, axes
+    return fig, gs
 
 
 def plot_delay_effect(sweep_df, p_val, q_val, tau_vals=None,
@@ -296,7 +326,7 @@ if __name__ == "__main__":
 
     # Grid of heatmaps for all tau and delay combinations
     print("Creating grid of heatmaps...")
-    fig_grid, axes_grid = plot_pq_heatmap_grid(
+    fig_grid, gs_grid = plot_pq_heatmap_grid(
         sweep_df, tau_vals, delay_vals, save_path="hybrid_heatmap_grid.pdf"
     )
     plt.show()
@@ -319,6 +349,11 @@ if __name__ == "__main__":
         save_path="hybrid_intervention_strength.pdf"
     )
     plt.show()
+
+    # Print summary table
+    print("\nSummary statistics:")
+    summary = create_summary_table(sweep_df)
+    print(summary)
 
 
 
