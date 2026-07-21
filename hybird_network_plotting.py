@@ -87,9 +87,9 @@ def plot_pq_heatmap_single(sweep_df, tau, delay, val_col='mean_final_epidemic_fr
 
     plt.tight_layout()
 
-    # if save_path is not None:
-    #     fig.savefig(save_path, dpi=300, bbox_inches='tight')
-    #     print(f"Saved figure: {save_path}")
+    if save_path is not None:
+        fig.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"Saved figure: {save_path}")
 
     return fig, ax
 
