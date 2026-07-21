@@ -255,8 +255,8 @@ def parameter_sweep(N, k_vals, beta, gamma, rho, sim_duration, n_runs, p_vals, q
 if __name__ == '__main__':
     p_values = list(np.linspace(0, 1, 10))
     q_values = list(np.linspace(0, 0.5, 10))
-    tau_values = list(range(10, 11, 10))
-    # print(tau_values)
+    tau_values = list(range(9, 16, 2))  # [9, 11, 13, 15]
+    print(tau_values)
 
     # min and max values for beta and gamma
     beta = 0.4
@@ -264,7 +264,8 @@ if __name__ == '__main__':
     k_range = [3]
     num_workers = 6
 
-    trial_sweep = parameter_sweep(N=1000, k_vals=k_range, beta=beta, gamma=gamma, rho=0.05,
-                                  sim_duration=75,
-                                  n_runs=1000, p_vals=p_values, q_vals=q_values, tau_vals=tau_values,
-                                  save_path='sweep_results_tau3_2007.csv', n_workers=num_workers)
+    for tau in tau_values:
+        trial_sweep = parameter_sweep(
+            N=1000, k_vals=k_range, beta=beta, gamma=gamma, rho=0.05,
+            sim_duration=75, n_runs=1000, p_vals=p_values, q_vals=q_values, tau_vals=[tau],
+            save_path=f'sweep_results_tau{tau}_2007.csv', n_workers=num_workers)
