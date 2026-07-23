@@ -138,7 +138,7 @@ def plot_pq_heatmap_grid(sweep_df, tau_vals, delay_vals, val_col='mean_final_epi
             im = sb.heatmap(
                 pq_grid,
                 annot=False,
-                cmap='viridis',
+                cmap=heatmap_cmap,
                 ax=ax,
                 cbar=False,
                 vmin=vmin,
@@ -179,8 +179,7 @@ def plot_pq_heatmap_grid(sweep_df, tau_vals, delay_vals, val_col='mean_final_epi
 
     fig.suptitle(
         r"Hybrid Model: Effect of Reporting Delay ($\delta$, vertical) and Intervention Time ($\tau$, horizontal) on $(p, q)$ Space",
-        fontsize=13, y=0.98
-    )
+        fontsize=13, y=0.98)
 
     plt.tight_layout()
 
@@ -317,7 +316,7 @@ def create_summary_table(sweep_df, metric='mean_final_epidemic_fraction'):
 if __name__ == "__main__":
 
     # Load the sweep results
-    csv_path = "hybrid_sweep_results.csv"
+    csv_path = "hybrid_sweep_results_tau34.csv"
     sweep_df = load_sweep_results(csv_path)
 
     # Get unique values for plotting
@@ -327,7 +326,7 @@ if __name__ == "__main__":
     # Grid of heatmaps for all tau and delay combinations
     print("Creating grid of heatmaps...")
     fig_grid, gs_grid = plot_pq_heatmap_grid(
-        sweep_df, tau_vals, delay_vals, save_path="hybrid_heatmap_grid.pdf"
+        sweep_df, tau_vals, delay_vals, save_path="hybrid_heatmap_grid_tau34.pdf"
     )
     plt.show()
 
@@ -346,7 +345,7 @@ if __name__ == "__main__":
     print("Creating intervention strength plots...")
     fig, axes = plot_intervention_strength(
         sweep_df, tau_vals, delay_vals,
-        save_path="hybrid_intervention_strength.pdf"
+        save_path="hybrid_intervention_strength_tau34.pdf"
     )
     plt.show()
 
