@@ -339,13 +339,13 @@ if __name__ == "__main__":
     # Example usage
     p_values = list(np.linspace(0, 1, 10))
     q_values = list(np.linspace(0, 0.5, 10))
-    tau_values = [3, 4]
+    tau_values = [7]
     delay_values = [0.0, 0.5, 1, 2, 3]
 
     hybrid_sweep = parameter_sweep(
         N=1000, k=3, beta=0.4, gamma=0.2, rho=0.05, tau_vals=tau_values,
         delay_vals=delay_values, p_vals=p_values, q_vals=q_values, tmax=200,
-        n_runs=1000, metric="final_epidemic_fraction", save_path="hybrid_sweep_results.csv", n_workers=6,
+        n_runs=1000, metric="final_epidemic_fraction", save_path="hybrid_sweep_results.csv", n_workers=None,
         use_multiprocessing=True)
 
     print(hybrid_sweep.head(20))
