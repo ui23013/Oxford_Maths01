@@ -6,7 +6,9 @@ import pandas as pd
 import numpy as np
 from multiprocessing import Pool
 from functools import partial
+from plotting_style import set_plot_style, heatmap_cmap
 
+set_plot_style()
 
 def create_rrg(k, N):
     graph = nx.random_regular_graph(k, N)
@@ -252,20 +254,95 @@ def parameter_sweep(N, k_vals, beta, gamma, rho, sim_duration, n_runs, p_vals, q
         return sweep_df
 
 
+def plot_q_sweep(N, k, beta, gamma, rho, tau,
+                 sim_duration, q_values,
+                 p_values=(0, 0.5, 1),
+                 n_runs=100, n_workers=None):
+
+    # Precompute all parameter combinations
+    param_combos = [(p, q) for p in p_values for q in q_values]
+    total_combos = len(param_combos)
+
+    # Store mean epidemic sizes for each p
+    results = {p: [] for p in p_values}
+
+    plt.figure(figsize=(7, 5))
+
+    for combo_num, (p, q) in enumerate(param_combos, start=1):
+
+        df = run_repeated_sims(
+            N=N,
+            k=k,
+            beta=beta,
+            gamma=gamma,
+            rho=rho,
+            tau=tau,
+            p=p,
+            q=q,
+            sim_duration=sim_duration,
+            n_runs=n_runs,
+            n_workers=n_workers
+        )
+
+        mean_r_inf = (df["final_recovered"] / N).mean()
+        results[p].append(mean_r_inf)
+
+        print(f"[{combo_num}/{total_combos}] "
+              f"p={p:.2f}, q={q:.3f}, "
+              f"mean R_inf={mean_r_inf:.4f}")
+
+    # Plot one curve for each p
+    for p in p_values:
+        plt.plot(
+            q_values,
+            results[p],
+            marker='o',
+            linewidth=2,
+            label=fr"$p={p}$"
+        )
+
+    plt.xlabel(r"Proportion of edges removed, $q$")
+    plt.ylabel(r"Mean epidemic size, $R_\infty$")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig("q_sweep_plot.pdf")
+    plt.show()
+
+# if __name__ == '__main__':
+    # p_values = list(np.linspace(0, 1, 10))
+    # q_values = list(np.linspace(0, 0.5, 10))
+    # tau_values = list(range(9, 16, 2))  # [9, 11, 13, 15]
+    # print(tau_values)
+    #
+    # # min and max values for beta and gamma
+    # beta = 0.4
+    # gamma = 0.2
+    # k_range = [3]
+    # num_workers = 6
+    #
+    # for tau in tau_values:
+    #     trial_sweep = parameter_sweep(
+    #         N=1000, k_vals=k_range, beta=beta, gamma=gamma, rho=0.05,
+    #         sim_duration=75, n_runs=1000, p_vals=p_values, q_vals=q_values, tau_vals=[tau],
+    #         save_path=f'sweep_results_tau{tau}_2007.csv', n_workers=num_workers)
 if __name__ == '__main__':
-    p_values = list(np.linspace(0, 1, 10))
-    q_values = list(np.linspace(0, 0.5, 10))
-    tau_values = list(range(9, 16, 2))  # [9, 11, 13, 15]
-    print(tau_values)
 
-    # min and max values for beta and gamma
-    beta = 0.4
-    gamma = 0.2
-    k_range = [3]
-    num_workers = 6
+        N = 1000
+        k = 3
+        beta, gamma = 0.4, 0.2
+        rho = 0.05
+        tau = 5
+        sim_duration = 75
 
-    for tau in tau_values:
-        trial_sweep = parameter_sweep(
-            N=1000, k_vals=k_range, beta=beta, gamma=gamma, rho=0.05,
-            sim_duration=75, n_runs=1000, p_vals=p_values, q_vals=q_values, tau_vals=[tau],
-            save_path=f'sweep_results_tau{tau}_2007.csv', n_workers=num_workers)
+        # q values to investigate
+        q_values = np.linspace(0, 0.5, 31)
+
+        # compare random, partial-information and perfect-information interventions
+        p_values = [1]
+
+        # num of stochastic repeats for each q
+        n_runs = 1000
+
+        # produce bifurcation-style plot
+        plot_q_sweep(N=N, k=k, beta=beta, gamma=gamma, rho=rho, tau=tau, sim_duration=sim_duration, q_values=q_values,
+            p_values=p_values, n_runs=n_runs)
