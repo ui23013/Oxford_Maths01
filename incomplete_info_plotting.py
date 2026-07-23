@@ -1,28 +1,10 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-import numpy as np
 import seaborn as sb
+from plotting_style import set_plot_style, heatmap_cmap
 
-plt.style.use('bmh')
+set_plot_style()
 
-plt.rcParams.update({
-    "text.usetex": True,
-    "font.family": "serif",
-    "font.serif": ["Computer Modern Roman"],
-    "font.size": 11,
-    "axes.labelsize": 12,
-    "axes.titlesize": 13,
-    "xtick.labelsize": 10,
-    "ytick.labelsize": 10,
-    "figure.dpi": 300,
-    "savefig.dpi": 300,
-    "axes.facecolor": "white",
-    "figure.facecolor": "white",
-    "axes.edgecolor": "black",
-    "grid.color": "0.85",
-    "grid.linestyle": ":",
-    "grid.linewidth": 0.7
-})
 
 def load_sweep_results(csv_path):
     '''
@@ -48,7 +30,7 @@ def plot_pq_heatmap(sweep_df, tau, val_col='mean_r_inf'):
     pq_grid = pq_grid.sort_index(axis=1, ascending=True)  # p increasing rightward
 
     fig, ax = plt.subplots(figsize=(6, 5))
-    sb.heatmap(pq_grid, annot=False, cmap= 'viridis', cbar_kws={"label": r"Mean $R_\infty (\%)$"}, ax=ax)
+    sb.heatmap(pq_grid, annot=False, cmap=heatmap_cmap, cbar_kws={"label": r"Mean $R_\infty$"}, ax=ax)
     ax.set_xlabel(r"$p$")
     ax.set_ylabel(r"$q$")
     ax.set_xticklabels([f"{x:.3f}" for x in pq_grid.columns], rotation=45, ha="right")
@@ -59,9 +41,10 @@ def plot_pq_heatmap(sweep_df, tau, val_col='mean_r_inf'):
     plt.show()
     return fig,ax
 
-trial_csv = load_sweep_results('/Users/joycewilliamslt/Documents/GitHub/Oxford_Maths01/trial4_sweep_results.csv')
 
-tau_vals = [5, 10]
+trial_csv = load_sweep_results('/Users/joycewilliamslt/Documents/GitHub/Oxford_Maths01/sweep_results_tau11_2007.csv')
+
+tau_vals = [11]
 
 for tau in tau_vals:
     trial_heatmap = plot_pq_heatmap(trial_csv, tau, val_col='mean_r_inf')

@@ -4,6 +4,8 @@ import EoN as eon
 import random
 import pandas as pd
 import numpy as np
+from multiprocessing import Pool
+from functools import partial
 
 
 def create_rrg(k, N):
@@ -29,7 +31,6 @@ def run_first_sim(graph, beta, gamma, rho, tau):
 
     # retrieve infected and recovered nodes at time tau
     infected_nodes = [node for node, status in first_states.items() if status == 'I']
-
     recovered_nodes = [node for node, status in first_states.items() if status == 'R']
 
     return infected_nodes, recovered_nodes, first_states
@@ -84,10 +85,14 @@ def run_second_sim(graph, beta, gamma, infected_nodes, recovered_nodes,tmin, tma
     '''
     run simultation from time tau to tmax
     '''
-    sim = eon.Gillespie_SIR(graph, beta, gamma, initial_infecteds=infected_nodes, initial_recovereds=recovered_nodes,
+    try:
+        sim = eon.Gillespie_SIR(graph, beta, gamma, initial_infecteds=infected_nodes, initial_recovereds=recovered_nodes,
                             tmin=tmin, tmax=tmax, return_full_data=True)
 
-    return sim
+        return sim
+    except ZeroDivisionError:
+
+        return None # if no transmission is possible, return current state
 
 
 def sim_single_intervention(N, k, beta, gamma, rho, tau, p, q, sim_duration):
@@ -111,32 +116,63 @@ def sim_single_intervention(N, k, beta, gamma, rho, tau, p, q, sim_duration):
 
     # and run a second sum to see results of intervention
     second_sim = run_second_sim(modified_graph, beta, gamma, infected_nodes, recovered_nodes, tmin=tau, tmax=sim_duration)
-    final_states = second_sim.get_statuses(time=sim_duration) # states at final time
 
-    # outcomes
-    final_infected = sum(1 for status in final_states.values() if status == 'I')
-    final_recovered = sum(1 for status in final_states.values() if status == 'R')
+    if second_sim is None:  # Simulation couldn't run (no transmission possible)
+        final_infected = len(infected_nodes)
+        final_recovered = len(recovered_nodes)
+    else:
+        final_states = second_sim.get_statuses(time=sim_duration)
+        final_infected = sum(1 for status in final_states.values() if status == 'I')
+        final_recovered = sum(1 for status in final_states.values() if status == 'R')
+
+    # print(final_infected) # debug to ensure epidemic is in fact over
+
     total_infected = final_infected + final_recovered
 
     return modified_graph, edges_removed, final_infected, final_recovered, total_infected, len(infected_nodes)
 
 
-def run_repeated_sims(N, k, beta, gamma, rho, tau, p, q, sim_duration, n_runs=25):
+# github copilot
+def _run_single_sim(_, N, k, beta, gamma, rho, tau, p, q, sim_duration):
+    '''Helper function for parallelization'''
+    return sim_single_intervention(N=N, k=k, beta=beta, gamma=gamma, rho=rho, tau=tau,
+                                   p=p, q=q, sim_duration=sim_duration)
+
+
+def run_repeated_sims(N, k, beta, gamma, rho, tau, p, q, sim_duration, n_runs, n_workers=None):
     '''
     runs same simulation multiple times
     Args:
         sim_duration: how long the sim should be run from
         seed: graph no.
         n_runs: how many repeats
+        n_works: number of parallel works
     '''
-    records = [] # initialise empty list to record data
-    for _ in range(n_runs):
-        (modified_graph, edges_removed, final_infected, final_recovered, total_infected, seed_infected) = (
-            sim_single_intervention(N=N, k=k, beta=beta, gamma=gamma, rho=rho, tau=tau, p=p, q=q,
-                                    sim_duration=sim_duration))
 
-        records.append({'seed_infected': seed_infected, 'edges_removed': edges_removed, 'final_infected':final_infected,
-                        'final_recovered': final_recovered, 'total_infected': total_infected,})
+    run_sim = partial(_run_single_sim, N=N, k=k, beta=beta, gamma=gamma, rho=rho,
+                      tau=tau, p=p, q=q, sim_duration=sim_duration)
+
+    with Pool(n_workers) as pool:
+        results = pool.map(run_sim, range(n_runs))
+
+    records = [
+        {
+            'seed_infected': seed_infected,
+            'edges_removed': edges_removed,
+            'final_infected': final_infected,
+            'final_recovered': final_recovered,
+            'total_infected': total_infected
+        }
+        for modified_graph, edges_removed, final_infected, final_recovered, total_infected, seed_infected in results
+    ]
+
+    # for _ in range(n_runs):
+    #     (modified_graph, edges_removed, final_infected, final_recovered, total_infected, seed_infected) = (
+    #         sim_single_intervention(N=N, k=k, beta=beta, gamma=gamma, rho=rho, tau=tau, p=p, q=q,
+    #                                 sim_duration=sim_duration))
+    #
+    #     records.append({'seed_infected': seed_infected, 'edges_removed': edges_removed, 'final_infected':final_infected,
+    #                     'final_recovered': final_recovered, 'total_infected': total_infected,})
 
     return pd.DataFrame(records)
 
@@ -149,11 +185,11 @@ def compare_interventions(N, k, beta, gamma, rho, tau, sim_duration, n_runs):
     '''
 
     df_no = run_repeated_sims(N=N, k=k, beta=beta, gamma=gamma, rho=rho, tau=tau,
-                               p=1, q=0.0, sim_duration=sim_duration,n_runs=n_runs)
+                               p=1, q=0.0, sim_duration=sim_duration,n_runs=n_runs, n_workers=4)
     df_random = run_repeated_sims(N=N, k=k, beta=beta, gamma=gamma, rho=rho, tau=tau,
-                                   p=0, q=0.1, sim_duration=sim_duration, n_runs=n_runs)
+                                   p=0, q=0.1, sim_duration=sim_duration, n_runs=n_runs, n_workers=4)
     df_perfect = run_repeated_sims(N=N, k=k, beta=beta, gamma=gamma, rho=rho, tau=tau,
-                                    p=1, q=0.1, sim_duration=sim_duration, n_runs=n_runs)
+                                    p=1, q=0.1, sim_duration=sim_duration, n_runs=n_runs, n_workers=4)
 
     return pd.Series({
         'no_intervention': (df_no['final_recovered'] / N).mean(),
@@ -166,37 +202,46 @@ def compare_interventions(N, k, beta, gamma, rho, tau, sim_duration, n_runs):
 # print(r_inf_summary)
 
 
-def parameter_sweep(N, k, beta, gamma, rho, sim_duration, n_runs, p_vals, q_vals, tau_vals,
-                    metric='final_recovered', save_path=None):
+def parameter_sweep(N, k_vals, beta, gamma, rho, sim_duration, n_runs, p_vals, q_vals, tau_vals,
+                    metric='final_recovered', save_path=None, n_workers=None):
         '''
         does a parameter sweep across (p, q, tau) and records mean r_inf for a given parameter combination
         Args:
+            k_vals: list of possible degree values for graph
+            beta_range: min and max beta values for sampling of beta
+            gamma_range: same as above but for gamma
             p_vals: list of values for probability of informed edge removal, p
             q_vals: list of values for proportion of edges removed at intervention, q
             tau_vals: list of values for intervention time, tau
             metric: the metric that we find a mean value for, in this instance r_inf
             save_path: to save to device
         '''
+        # to optimise, precompute all param combos
+        param_combos = [(tau, p_val, q_val) for tau in tau_vals for p_val in p_vals for q_val in q_vals]
+        total_combos = len(param_combos
+                           )
         records = [] # initialise empty list to store data
-
-        total_combos = len(p_vals) * len(q_vals) * len(tau_vals)
         combo_num = 0
 
-        for tau in tau_vals:
-            for p_val in p_vals:
-                for q_val in q_vals:
-                    combo_num += 1 # add 1 go combo counter
+        for combo_num, (tau, p_val, q_val) in enumerate(param_combos, 1):
 
-                    # for given combination, repeatedly run an sir sim
-                    df = run_repeated_sims(N=N, k=k, beta=beta, gamma=gamma, rho=rho, tau=tau, p=p_val, q=q_val
-                                           ,sim_duration=sim_duration, n_runs=n_runs)
-                    # and get average r_inf value (as % of population, in case we wanna change that too)
-                    mean_r_inf = (df[metric]/N).mean()
-                    # append param combo and corresponding mean r_inf value
-                    records.append({'p': p_val, 'q': q_val, 'tau': tau, 'mean_r_inf': mean_r_inf})
+            # # randomly sample beta and gamma
+            # beta = np.random.uniform(beta_range[0], beta_range[-1])
+            # gamma = np.random.uniform(gamma_range[0], gamma_range[-1])
+            k = np.random.choice(k_vals)
 
-                    print(f'[{combo_num}/{total_combos}] p={p_val}, q={q_val}, tau={tau} '
-                          f'mean_r_inf={mean_r_inf:.4f}')
+            # for given combination, repeatedly run an sir sim
+            df = run_repeated_sims(N=N, k=k, beta=beta, gamma=gamma, rho=rho, tau=tau, p=p_val, q=q_val
+                                    ,sim_duration=sim_duration, n_runs=n_runs, n_workers=n_workers)
+
+            # and get average r_inf value (as % of population) vectorised
+            mean_r_inf = (df[metric]/N).mean()
+            # append param combo and corresponding mean r_inf value plus beta, gamma and k used
+            records.append({'p': p_val, 'q': q_val, 'tau': tau,  'k': k, 'beta': beta, 'gamma': gamma,
+                            'mean_r_inf': mean_r_inf})
+
+            print(f'[{combo_num}/{total_combos}] p={p_val}, q={q_val}, tau={tau}, k={k}, beta={beta:.4f}, gamma={gamma:.4f} '
+                    f'mean_r_inf={mean_r_inf:.4f}')
 
         sweep_df = pd.DataFrame(records)
 
@@ -207,11 +252,20 @@ def parameter_sweep(N, k, beta, gamma, rho, sim_duration, n_runs, p_vals, q_vals
         return sweep_df
 
 
-p_values = list(np.linspace(0, 1, 20))
-q_values = list(np.linspace(0, 0.5, 20))
-tau_values = list(range(5, 11, 5))
-# print(tau_values)
+if __name__ == '__main__':
+    p_values = list(np.linspace(0, 1, 10))
+    q_values = list(np.linspace(0, 0.5, 10))
+    tau_values = list(range(9, 16, 2))  # [9, 11, 13, 15]
+    print(tau_values)
 
-trial_sweep = parameter_sweep(N=1000, k=3, beta=0.5, gamma=0.3, rho=0.05, sim_duration=1000, n_runs=10, p_vals=p_values,
-                             q_vals=q_values, tau_vals=tau_values, save_path='trial5_sweep_results.csv')
+    # min and max values for beta and gamma
+    beta = 0.4
+    gamma = 0.2
+    k_range = [3]
+    num_workers = 6
 
+    for tau in tau_values:
+        trial_sweep = parameter_sweep(
+            N=1000, k_vals=k_range, beta=beta, gamma=gamma, rho=0.05,
+            sim_duration=75, n_runs=1000, p_vals=p_values, q_vals=q_values, tau_vals=[tau],
+            save_path=f'sweep_results_tau{tau}_2007.csv', n_workers=num_workers)
