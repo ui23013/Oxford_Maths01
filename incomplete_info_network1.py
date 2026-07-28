@@ -475,19 +475,33 @@ if __name__ == '__main__':
     #     bins=50, save_path='histogram_tau3_p08_q03.pdf')
 
     # (p, q, tau) combinations
-    combos = [(0.9, 0.45, 3), (0.8, 0.4, 3), (0.6, 0.425, 3), # red region
-              (1.0, 0.25, 3), (0.8, 0.3, 3), (0.6, 0.35, 3), (0.4, 0.4, 3), (0.2, 0.45, 3), (0, 0.5, 3), # STD line
-              (1.0, 0.15, 3), (0.8, 0.2, 3), (0.6, 0.25, 3), (0.4, 0.3, 3), (0.2, 0.35, 3), (0, 0.4, 3), # Yellow to blue
-              (1.0, 0, 3), (0.8, 0.05, 3), (0.6, 0.1, 3), (0.4, 0.15, 3), (0.2, 0.2, 3), (0, 0.25, 3), # bluish yellow
-              (0.1, 0.05, 3), (0.2, 0.125, 3), (0.4, 0.025, 3),] # blue region
+    combos = [(0.9, 0.45, 4), (0.8, 0.4, 4), (0.6, 0.425, 4), # red region
+              (1.0, 0.25, 4), (0.8, 0.3, 4), (0.6, 0.35, 4), (0.4, 0.4, 4), (0.2, 0.45, 4), (0, 0.5, 4), # STD line
+              (1.0, 0.15, 4), (0.8, 0.2, 4), (0.6, 0.25, 4), (0.4, 0.3, 4), (0.2, 0.35, 4), (0, 0.4, 4), # Yellow to blue
+              (1.0, 0, 4), (0.8, 0.05, 4), (0.6, 0.1, 4), (0.4, 0.15, 4), (0.2, 0.2, 4), (0, 0.25, 4), # bluish yellow
+              (0.1, 0.05, 4), (0.2, 0.125, 4), (0.4, 0.025, 4),] # blue region
 
-    summary = plot_histogram_multiple(
+    combos_2 = [(0.9, 0.45, 5), (0.8, 0.4, 5), (0.6, 0.425, 5),  # red region
+              (1.0, 0.25, 5), (0.8, 0.3, 5), (0.6, 0.35, 5), (0.4, 0.4, 5), (0.2, 0.45, 5), (0, 0.5, 5),  # STD line
+              (1.0, 0.15, 5), (0.8, 0.2, 5), (0.6, 0.25, 5), (0.4, 0.3, 5), (0.2, 0.35, 5), (0, 0.4, 5),
+              # Yellow to blue
+              (1.0, 0, 5), (0.8, 0.05, 5), (0.6, 0.1, 5), (0.4, 0.15, 5), (0.2, 0.2, 5), (0, 0.25, 5),  # bluish yellow
+              (0.1, 0.05, 5), (0.2, 0.125, 5), (0.4, 0.025, 5), ]  # blue region
+    # summary = plot_histogram_multiple(
+    #     N=1000, k=3, beta=0.4, gamma=0.2, rho=0.05,
+    #     sim_duration=75, n_runs=1000, param_combos=combos,
+    #     metric='total_infected', normalize=True, bins=50,
+    #     n_workers=6,
+    #     save_fig_path='histogram_grid_tau4.pdf',
+    #     save_csv_path='histogram_summary_tau4.csv')
+
+    summary_2 = plot_histogram_multiple(
         N=1000, k=3, beta=0.4, gamma=0.2, rho=0.05,
-        sim_duration=75, n_runs=1000, param_combos=combos,
+        sim_duration=75, n_runs=1000, param_combos=combos_2,
         metric='total_infected', normalize=True, bins=50,
         n_workers=6,
-        save_fig_path='histogram_grid.pdf',
-        save_csv_path='histogram_summary.csv')
+        save_fig_path='histogram_grid_tau5.pdf',
+        save_csv_path='histogram_summary_tau5.csv')
 
 
     # p_values = list(np.linspace(0, 1, 10))
