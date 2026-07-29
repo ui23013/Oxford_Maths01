@@ -500,8 +500,8 @@ if __name__ == '__main__':
         sim_duration=75, n_runs=1000, param_combos=combos_2,
         metric='total_infected', normalize=True, bins=50,
         n_workers=6,
-        save_fig_path='histogram_grid_tau5.pdf',
-        save_csv_path='histogram_summary_tau5.csv')
+        save_fig_path='../Histogram_csvs_and_plots/histogram_grid_tau5.pdf',
+        save_csv_path='../Histogram_csvs_and_plots/histogram_summary_tau5.csv')
 
 
     # p_values = list(np.linspace(0, 1, 10))

@@ -18,10 +18,10 @@ from plotting_style import set_plot_style, heatmap_cmap
 set_plot_style()
 
 # ---- config ----
-INPUT_DIR = "."
+INPUT_DIR = ".."
 FILE_PATTERN = "hybrid_sweep_results_tau*.csv"
 VALUE_COL = "mean_final_epidemic_fraction"
-OUTPUT_PATH = "tau_delay_grid.png"
+OUTPUT_PATH = "../Tau_Delta_Heatmap_Plots/tau_delay_grid.png"
 
 # ---- load + combine all sweep files ----
 paths = sorted(glob.glob(f"{INPUT_DIR}/{FILE_PATTERN}"))

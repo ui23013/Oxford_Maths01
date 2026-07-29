@@ -345,8 +345,7 @@ if __name__ == "__main__":
     print("Creating intervention strength plots...")
     fig, axes = plot_intervention_strength(
         sweep_df, tau_vals, delay_vals,
-        save_path="hybrid_intervention_strength_tau34.pdf"
-    )
+        save_path="hybrid_intervention_strength_tau34.pdf")
     plt.show()
 
     # Print summary table

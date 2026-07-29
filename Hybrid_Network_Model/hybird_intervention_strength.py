@@ -75,4 +75,4 @@ sweep_df = pd.concat([pd.read_csv(p) for p in paths], ignore_index=True)
 fig, axes = plot_intervention_strength(
     sweep_df,
     tau_vals=[3, 4, 5, 6],
-    save_path="intervention_strength_tau3-6.pdf",)
+    save_path="../intervention_strength_tau3-6.pdf",)

@@ -252,17 +252,18 @@ def _worker_combo(args):
 
     # Run repeated simulations for this parameter combo
     df = run_repeated_sims(
-        N=N, k=k, beta=beta, gamma=gamma, rho=rho,
-        tau=tau, delay=delay,
-        p=p, q=q, tmax=tmax,
-        n_runs=n_runs
+        N=N, k=k, beta=beta, gamma=gamma, rho=rho, tau=tau, delay=delay,
+        p=p, q=q, tmax=tmax, n_runs=n_runs
     )
 
-    # keep metrics for each stochastic run
-    mean_metric = df["final_epidemic_fraction"].mean()
-    std_metric = df["final_epidemic_fraction"].std()
+    mean_metric = df['final_epidemic_fraction'].mean()
+    std_metric = df['final_epidemic_fraction'].std()
 
-    summary_dict = {
+    print(f"[{combo_num}/{total_combos}] tau={tau}, delay={delay}, "
+          f"p={p:.2f}, q={q:.2f} "
+          f"mean={mean_metric:.4f} ± {std_metric:.4f}")
+
+    return {
         "tau": tau,
         "delay": delay,
         "p": p,
@@ -270,8 +271,6 @@ def _worker_combo(args):
         "mean_final_epidemic_fraction": mean_metric,
         "std_final_epidemic_fraction": std_metric,
     }
-
-    return summary_dict, df
 
 
 def parameter_sweep(N, k, beta, gamma, rho, tau_vals, delay_vals, p_vals,
@@ -319,26 +318,21 @@ def parameter_sweep(N, k, beta, gamma, rho, tau_vals, delay_vals, p_vals,
     print(f"Total parameter combinations: {total_combos}")
     print(f"Using multiprocessing: {use_multiprocessing}")
 
-    summary_records = []
-    all_runs = []
-
     if use_multiprocessing:
+        # Use multiprocessing for parallel execution
         with Pool(processes=n_workers) as pool:
-            results = pool.map(_worker_combo, combo_list)
+            records = pool.map(_worker_combo, combo_list)
     else:
-        results = [_worker_combo(args) for args in combo_list]
+        # Sequential execution
+        records = [_worker_combo(args) for args in combo_list]
 
-    for summary, df in results:
-        summary_records.append(summary)
-        all_runs.append(df)
+    sweep_df = pd.DataFrame(records)
 
-    summary_df = pd.DataFrame(summary_records)
-    runs_df = pd.concat(all_runs, ignore_index=True)
+    if save_path is not None:
+        sweep_df.to_csv(save_path, index=False)
+        print(f"\nSaved sweep results to {save_path}")
 
-    summary_df.to_csv("hybrid_sweep_summary.csv", index=False) # this can go directly into the hybrid plotting py
-    runs_df.to_csv("hybrid_sweep_all_runs.csv", index=False) # this records all of the stochastic runs for each combination
-
-    return summary_df
+    return sweep_df
 
 
 if __name__ == "__main__":
@@ -351,7 +345,7 @@ if __name__ == "__main__":
     hybrid_sweep = parameter_sweep(
         N=1000, k=3, beta=0.4, gamma=0.2, rho=0.05, tau_vals=tau_values,
         delay_vals=delay_values, p_vals=p_values, q_vals=q_values, tmax=100,
-        n_runs=500, metric="final_epidemic_fraction_trial", save_path="hybrid_sweep_results_trial.csv", n_workers=None,
+        n_runs=500, metric="final_epidemic_fraction", save_path="hybrid_sweep_results_0.5.csv", n_workers=6,
         use_multiprocessing=True)
 
     print(hybrid_sweep.head(20))
