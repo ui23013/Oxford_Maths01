@@ -15,7 +15,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sb
-from plotting_style import set_plot_style, heatmap_cmap
+from Oxford_Maths01.plotting_style import set_plot_style, heatmap_cmap
 
 set_plot_style()
 
@@ -31,6 +31,20 @@ def load_sweep_results(csv_path):
         DataFrame with columns: tau, delay, p, q, mean_final_epidemic_fraction, std_final_epidemic_fraction
     '''
     return pd.read_csv(csv_path)
+
+
+def filter_delay_le_tau(df):
+    '''
+    Remove rows where delay > tau (physically invalid).
+
+    Args:
+        df: DataFrame containing 'delay' and 'tau' columns
+
+    Returns:
+        Filtered DataFrame
+    '''
+    return df[df['delay'] <= df['tau']].copy()
+
 
 
 def plot_pq_heatmap_single(sweep_df, tau, delay, val_col='mean_final_epidemic_fraction',
@@ -123,12 +137,14 @@ def plot_pq_heatmap_grid(sweep_df, tau_vals, delay_vals, val_col='mean_final_epi
             filtered_data = sweep_df[(sweep_df['tau'] == tau) & (sweep_df['delay'] == delay)]
 
             if filtered_data.empty:
-                ax.text(0.5, 0.5, f'No data\nτ={tau}, δ={delay}',
-                        ha='center', va='center', transform=ax.transAxes,
-                        fontsize=10)
-                ax.set_xticks([])
-                ax.set_yticks([])
-                continue
+                ax.text(
+                    0.5, 0.5,
+                    rf'No data' + '\n' + rf'$\tau={tau},\ \delta={delay}$',
+                    ha='center',
+                    va='center',
+                    transform=ax.transAxes,
+                    fontsize=10
+                )
 
             # Pivot to create grid
             pq_grid = filtered_data.pivot(index='q', columns='p', values=val_col)
@@ -169,7 +185,7 @@ def plot_pq_heatmap_grid(sweep_df, tau_vals, delay_vals, val_col='mean_final_epi
                 ax.set_xlabel("")
 
             # Title with tau and delta
-            ax.set_title(rf"$\tau = {tau}$, $\delta = {delay}$", fontsize=11, pad=8)
+            ax.set_title(rf"$\tau={tau},\ \delta={delay}$", fontsize=11, pad=8)
             ax.grid(False)
 
     # Add colorbar on the right side
@@ -315,9 +331,13 @@ def create_summary_table(sweep_df, metric='mean_final_epidemic_fraction'):
 # Example usage and main plotting routine
 if __name__ == "__main__":
 
-    # Load the sweep results
-    csv_path = "hybrid_sweep_results_tau34.csv"
+    # Load the sweep results from one of the CSV files
+    csv_path = "hybrid_sweep_results_0.5.csv"
     sweep_df = load_sweep_results(csv_path)
+
+    # Filter out rows where delay > tau (physically invalid)
+    sweep_df = filter_delay_le_tau(sweep_df)
+    print(f"After filtering, {len(sweep_df)} rows remain.")
 
     # Get unique values for plotting
     tau_vals = sorted(sweep_df['tau'].unique())
@@ -326,26 +346,25 @@ if __name__ == "__main__":
     # Grid of heatmaps for all tau and delay combinations
     print("Creating grid of heatmaps...")
     fig_grid, gs_grid = plot_pq_heatmap_grid(
-        sweep_df, tau_vals, delay_vals, save_path="hybrid_heatmap_grid_tau34.pdf"
-    )
+        sweep_df, tau_vals, delay_vals, save_path="hybrid_heatmap_grid_0.5.pdf")
     plt.show()
 
-    # Individual heatmaps for each tau-delay combination
-    print("Creating individual heatmaps...")
-    for tau in tau_vals:
-        for delay in delay_vals:
-            fig, ax = plot_pq_heatmap_single(
-                sweep_df, tau, delay,
-                save_path=f"hybrid_heatmap_tau{tau}_delay{delay}.pdf"
-            )
-            if fig is not None:
-                plt.show()
+    # # Individual heatmaps for each tau-delay combination
+    # print("Creating individual heatmaps...")
+    # for tau in tau_vals:
+    #     for delay in delay_vals:
+    #         fig, ax = plot_pq_heatmap_single(
+    #             sweep_df, tau, delay,
+    #             save_path=f"hybrid_heatmap_tau{tau}_delay{delay}.pdf"
+    #         )
+    #         if fig is not None:
+    #             plt.show()
 
     # Intervention strength comparison
     print("Creating intervention strength plots...")
     fig, axes = plot_intervention_strength(
         sweep_df, tau_vals, delay_vals,
-        save_path="hybrid_intervention_strength_tau34.pdf")
+        save_path="hybrid_intervention_strength_0.5.pdf")
     plt.show()
 
     # Print summary table

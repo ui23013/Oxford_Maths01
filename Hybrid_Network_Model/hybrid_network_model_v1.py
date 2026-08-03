@@ -343,7 +343,7 @@ if __name__ == "__main__":
     delay_values = [0.0, 0.5, 1, 1.5, 2, 2.5, 3]
 
     hybrid_sweep = parameter_sweep(
-        N=1000, k=3, beta=0.4, gamma=0.1, rho=0.05, tau_vals=tau_values,
+        N=1000, k=3, beta=0.4, gamma=0.3, rho=0.05, tau_vals=tau_values,
         delay_vals=delay_values, p_vals=p_values, q_vals=q_values, tmax=100,
         n_runs=500, metric="final_epidemic_fraction", save_path="hybrid_sweep_results_0.25.csv", n_workers=6,
         use_multiprocessing=True)

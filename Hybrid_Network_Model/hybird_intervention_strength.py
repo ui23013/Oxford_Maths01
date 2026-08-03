@@ -6,7 +6,7 @@ import glob
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from plotting_style import set_plot_style, heatmap_cmap
+from Oxford_Maths01.plotting_style import set_plot_style
 
 set_plot_style()
 

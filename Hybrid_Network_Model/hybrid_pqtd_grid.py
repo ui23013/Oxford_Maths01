@@ -10,10 +10,9 @@ Glob pattern below picks up all matching sweep files in INPUT_DIR.
 """
 import glob
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 
-from plotting_style import set_plot_style, heatmap_cmap
+from Oxford_Maths01.plotting_style import set_plot_style, heatmap_cmap
 
 set_plot_style()
 
