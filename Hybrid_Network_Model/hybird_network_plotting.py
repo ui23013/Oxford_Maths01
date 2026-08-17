@@ -332,7 +332,7 @@ def create_summary_table(sweep_df, metric='mean_final_epidemic_fraction'):
 if __name__ == "__main__":
 
     # Load the sweep results from one of the CSV files
-    csv_path = "hybrid_sweep_results_0.5.csv"
+    csv_path = "hybrid_sweep_results_0.75.csv"
     sweep_df = load_sweep_results(csv_path)
 
     # Filter out rows where delay > tau (physically invalid)
@@ -346,7 +346,7 @@ if __name__ == "__main__":
     # Grid of heatmaps for all tau and delay combinations
     print("Creating grid of heatmaps...")
     fig_grid, gs_grid = plot_pq_heatmap_grid(
-        sweep_df, tau_vals, delay_vals, save_path="hybrid_heatmap_grid_0.5.pdf")
+        sweep_df, tau_vals, delay_vals, save_path="hybrid_heatmap_grid_0.75.pdf")
     plt.show()
 
     # # Individual heatmaps for each tau-delay combination

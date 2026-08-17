@@ -99,49 +99,124 @@ def plot_scatter(r_tau_frac, r_inf_frac, params, save_path=None):
 
 if __name__ == "__main__":
 
-    # define parameter combination
+    # Fixed parameters
     N = 1000
     k = 3
-    beta, gamma = 0.40, 0.20
     rho = 0.05
-    tau, delay = 7, 0
-    p, q = 1, 0.35
     tmax = 100
-    n_runs = 1000
+    n_runs = 500
 
-    params = dict(
-        N=N, k=k, beta=beta, gamma=gamma, rho=rho, tau=tau, delay=delay,
-        p=p, q=q, tmax=tmax, n_runs=n_runs,
+    # Different R0 regimes
+    beta_gamma_pairs = [
+        (0.20, 0.4),    # R0 = 0.5
+        (0.20, 0.20),  # R0 = 1
+        (0.40, 0.20),  # R0 = 2
+        (0.60, 0.20),  # R0 = 3
+    ]
+
+    # (p, q, tau, delay)
+    parameter_sets = [
+        (1.0, 0.10, 2.0, 0.0),  # Weak, very early intervention
+        (1.0, 0.50, 2.0, 0.0),  # Strong, very early intervention
+        (1.0, 0.30, 3.0, 0.0),  # Intermediate timing (likely near threshold)
+        (1.0, 0.30, 4.0, 0.0),  # Slightly later intervention
+        (1.0, 0.30, 5.0, 0.0),  # Late intervention
+        (1.0, 0.30, 3.0, 0.1),  # Small reporting delay
+        (1.0, 0.30, 3.0, 0.25),  # Moderate reporting delay
+        (1.0, 0.30, 3.0, 0.5),  # Large reporting delay
+        (0.5, 0.30, 3.0, 0.0),  # Imperfect targeting
+        (0.0, 0.30, 3.0, 0.0),  # Completely random intervention
+    ]
+
+    fig, axes = plt.subplots(
+        len(parameter_sets),
+        len(beta_gamma_pairs),
+        figsize=(5 * len(beta_gamma_pairs), 4 * len(parameter_sets)),
+        sharex=True,
+        sharey=True,
     )
 
-    df = run_repeated_sims(
-        N=N, k=k, beta=beta, gamma=gamma, rho=rho, tau=tau, delay=delay,
-        p=p, q=q, tmax=tmax, n_runs=n_runs,
-    )
+    if len(parameter_sets) == 1:
+        axes = np.array([axes])
 
-    r_tau_frac, r_inf_frac = get_r_tau_and_r_inf(df, N)
+    if len(beta_gamma_pairs) == 1:
+        axes = axes[:, np.newaxis]
 
-    # Quick numeric summary alongside the plot, useful for spotting a gap
-    # even before looking at the figure.
-    print("\nR(tau)/N summary:")
-    print(f"  min={r_tau_frac.min():.4f}, max={r_tau_frac.max():.4f}, "
-          f"mean={r_tau_frac.mean():.4f}")
-    print("R_inf/N summary:")
-    print(f"  min={r_inf_frac.min():.4f}, max={r_inf_frac.max():.4f}, "
-          f"mean={r_inf_frac.mean():.4f}")
+    for i, (p, q, tau, delay) in enumerate(parameter_sets):
 
-    sorted_r_inf = np.sort(r_inf_frac)
-    gaps = np.diff(sorted_r_inf)
-    if len(gaps) > 0:
-        biggest_gap_idx = np.argmax(gaps)
-        print(
-            f"Largest gap in sorted R_inf/N: {gaps[biggest_gap_idx]:.4f} "
-            f"between {sorted_r_inf[biggest_gap_idx]:.4f} and "
-            f"{sorted_r_inf[biggest_gap_idx + 1]:.4f}"
-        )
+        for j, (beta, gamma) in enumerate(beta_gamma_pairs):
 
-    fig, ax = plot_scatter(
-        r_tau_frac, r_inf_frac, params,
-        save_path="r_tau_vs_r_inf7.png",
-    )
+            df = run_repeated_sims(
+                N=N,
+                k=k,
+                beta=beta,
+                gamma=gamma,
+                rho=rho,
+                tau=tau,
+                delay=delay,
+                p=p,
+                q=q,
+                tmax=tmax,
+                n_runs=n_runs,
+            )
+
+            print(
+                beta, gamma,
+                "rows =", len(df),
+                "missing R(tau) =", df["infected_at_intervention"].isna().sum(),
+            )
+
+            print(df[["infected_at_intervention", "final_epidemic_fraction"]].describe())
+
+            r_tau_frac, r_inf_frac = get_r_tau_and_r_inf(df, N)
+
+            ax = axes[i, j]
+
+            ax.scatter(
+                r_tau_frac,
+                r_inf_frac,
+                s=20,
+                alpha=0.5,
+                edgecolor="none",
+            )
+
+            R0 = beta / gamma
+
+            ax.set_title(
+                rf"$R_0={R0:.1f}$"
+                "\n"
+                rf"$\beta={beta},\ \gamma={gamma}$",
+                fontsize=10,
+            )
+
+            if j == 0:
+                ax.set_ylabel(
+                    rf"$p={p}$" "\n"
+                    rf"$q={q}$" "\n"
+                    rf"$\tau={tau},\ \delta={delay}$"
+                )
+
+            if i == len(parameter_sets) - 1:
+                ax.set_xlabel(r"$R(\tau)/N$")
+
+            ax.set_xlim(-0.02, 0.55)
+            ax.set_ylim(-0.02, 1.02)
+            ax.grid(alpha=0.3)
+
+            # Print summaries
+            print(
+                f"(p={p}, q={q}, tau={tau}, delay={delay}, "
+                f"beta={beta}, gamma={gamma}, R0={R0:.1f})"
+            )
+            print(
+                f"R(tau): mean={r_tau_frac.mean():.4f}, "
+                f"R_inf: mean={r_inf_frac.mean():.4f}"
+            )
+
+    fig.supylabel(r"$R_\infty/N$")
+    fig.supxlabel(r"$R(\tau)/N$")
+    fig.tight_layout()
+
+    plt.savefig("r_tau_vs_r_inf_grid.png", dpi=300)
     plt.show()
+

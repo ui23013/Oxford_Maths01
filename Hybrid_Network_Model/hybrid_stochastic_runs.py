@@ -316,12 +316,12 @@ if __name__ == "__main__":
 
     # vary beta and gamma, keep p, q, tau, delta fixed
     summary_beta_gamma = plot_histogram_grid_beta_gamma(
-        p=0.275, q=0.31, tau=2.0, delay=0.0,
+        p=0.52, q=0.085, tau=2.0, delay=0.0,
         beta_values=[0.4],
         gamma_values=[0.1, 0.2, 0.3],
         N=1000, k=3, rho=0.05,
         tmax=100, n_runs=1000,
-        save_fig_path="histogram_p0.275_q0.31_t2_d0.pdf",
-        save_csv_path="histogram_summary_p0.275_q0.31_t2_d0.csv"
+        save_fig_path="histogram_p0.52_q0.085_t2_d0.pdf",
+        save_csv_path="histogram_summary_p0.52_q0.085_t2_d0.csv"
     )
 

@@ -38,6 +38,8 @@ except ImportError as e:
     print(f"Check file exists at: {MODULE_DIR2}/plotting_style.py")
     sys.exit(1)
 
+set_plot_style()
+
 
 def plot_probability_heatmap_grid(df, tau_vals, delay_vals,
                                   val_col="prob_large",
@@ -65,23 +67,37 @@ def plot_probability_heatmap_grid(df, tau_vals, delay_vals,
             if first_im is None:
                 first_im = im
 
+                # ---- Format p and q labels to 3 decimal places ----
+                # Get the actual tick positions (0.5 offset for heatmap)
+                # Seaborn places ticks at 0.5, 1.5, ...; we need to set labels accordingly.
+                # But we can simply set the labels with the index values.
+                # We need to set the ticks to the centers of the cells.
+            n_p = len(grid.columns)
+            n_q = len(grid.index)
+            ax.set_xticks(np.arange(n_p) + 0.5)
+            ax.set_yticks(np.arange(n_q) + 0.5)
+            ax.set_xticklabels([f"{x:.3f}" for x in grid.columns],
+                               rotation=45, ha="right", fontsize=8)
+            ax.set_yticklabels([f"{y:.3f}" for y in grid.index],
+                               rotation=0, fontsize=8)
+
+            # Axis labels
             if j == 0:
-                ax.set_ylabel(r"$q$")
+                ax.set_ylabel(r"$q$", fontsize=10)
             else:
                 ax.set_ylabel("")
 
-            if i == len(delay_vals)-1:
-                ax.set_xlabel(r"$p$")
+            if i == len(delay_vals) - 1:
+                ax.set_xlabel(r"$p$", fontsize=10)
             else:
                 ax.set_xlabel("")
 
-            ax.set_title(rf"$\tau={tau},\delta={delay}$", fontsize=11)
+            ax.set_title(rf"$\tau = {tau}$, $\delta = {delay}$", fontsize=11)
             ax.grid(False)
 
     cbar_ax = fig.add_axes([0.94, 0.15, 0.02, 0.7])
     fig.colorbar(first_im.collections[0], cax=cbar_ax).set_label(
-        r"$P(R_\infty>0.35)$"
-    )
+        r"$P(R_\infty>0.35)$")
 
     plt.tight_layout()
 
@@ -93,9 +109,8 @@ df = pd.read_csv("probability_large_outbreak_results.csv")
 
 plot_probability_heatmap_grid(
     df,
-    tau_vals=[2, 3, 4, 5],
+    tau_vals=[2, 4, 6],
     delay_vals=[0, 0.5, 1],
-    save_path="probability_large_branch_heatmaps.png"
-)
+    save_path="probability_large_branch_heatmaps.png")
 
 plt.show()
